@@ -1,0 +1,105 @@
+---
+import { Image } from 'astro:assets';
+import crest from '../assets/crest.png';
+import { ATOUT_FRANCE, CONTACT_EMAIL, ENTITY, FOOTER_JOURNEY, FOOTER_LEGAL, FOOTER_PLAN } from '../lib/site';
+---
+<footer class="site-footer">
+  <div class="site-footer__grid">
+    <div>
+      <div class="site-footer__crest">
+        <Image src={crest} alt="" height={60} densities={[1, 2]} />
+      </div>
+      <div class="site-footer__tagline">Play Beautifully. Travel Effortlessly.</div>
+    </div>
+    <nav aria-labelledby="ft-journey">
+      <div id="ft-journey" class="site-footer__heading">Journey</div>
+      <div class="site-footer__links">
+        {FOOTER_JOURNEY.map(([label, href]) => <a href={href}>{label}</a>)}
+      </div>
+    </nav>
+    <nav aria-labelledby="ft-plan">
+      <div id="ft-plan" class="site-footer__heading">Plan</div>
+      <div class="site-footer__links">
+        {FOOTER_PLAN.map(([label, href]) => <a href={href}>{label}</a>)}
+      </div>
+    </nav>
+    <div>
+      <div class="site-footer__heading">Enquiries</div>
+      <div class="site-footer__col">
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><br />By appointment<br />France-based team
+      </div>
+    </div>
+  </div>
+  <div class="site-footer__legal">
+    <p class="site-footer__disclosure">
+      Named restaurants, hotels, and courses are illustrative of the experience we curate. Final inclusions per trip are subject to availability and confirmed during the consultation call.
+    </p>
+    <div class="site-footer__bottom">
+      <span>© 2026 {ENTITY.toUpperCase()} — ATOUT FRANCE {ATOUT_FRANCE}</span>
+      <span class="site-footer__legal-links">
+        {FOOTER_LEGAL.map(([label, href]) => <a href={href}>{label}</a>)}
+        <button type="button" class="site-footer__cookie-btn" data-open-consent>Cookie settings</button>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  import { OPEN_CONSENT_EVENT } from '../lib/consent';
+  document.querySelector('[data-open-consent]')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent(OPEN_CONSENT_EVENT));
+  });
+</script>
+
+<style>
+  .site-footer { background: var(--surface-inverse); padding: 64px 40px 36px; }
+  .site-footer__grid {
+    max-width: 1200px; margin: 0 auto; display: grid; gap: 48px;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+  .site-footer__crest { display: inline-block; background: var(--color-cream); padding: 14px 18px; line-height: 0; }
+  .site-footer__crest img { height: 60px; width: auto; }
+  .site-footer__tagline {
+    font-family: var(--font-display); font-style: italic; font-size: 19px; color: var(--text-on-dark); margin-top: 16px;
+  }
+  .site-footer__heading {
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase;
+    color: var(--color-brass-light); margin-bottom: 12px;
+  }
+  .site-footer__links { display: flex; flex-direction: column; }
+  .site-footer__links a, .site-footer__col {
+    font-family: var(--font-sans); font-size: 12px; line-height: 2.1; color: var(--text-on-dark);
+  }
+  .site-footer__links a { opacity: 0.75; transition: opacity var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+  .site-footer__links a:hover { color: var(--color-brass-light); opacity: 1; }
+  .site-footer__col { opacity: 0.75; }
+  .site-footer__col a { color: inherit; }
+  .site-footer__col a:hover { color: var(--color-brass-light); }
+  .site-footer__legal {
+    max-width: 1200px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid rgba(245, 241, 232, 0.15);
+  }
+  .site-footer__disclosure {
+    font-family: var(--font-sans); font-size: 11px; line-height: 1.7; color: var(--text-on-dark);
+    opacity: 0.55; margin: 0 0 14px; max-width: 820px;
+  }
+  .site-footer__bottom {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.08em; color: var(--text-on-dark);
+  }
+  /* 0.55 rather than the prototype's 0.5 so 11px text clears WCAG AA (4.5:1) on charcoal */
+  .site-footer__bottom > span:first-child { opacity: 0.55; }
+  .site-footer__legal-links { display: flex; gap: 18px; flex-wrap: wrap; }
+  .site-footer__legal-links a, .site-footer__cookie-btn { color: var(--text-on-dark); opacity: 0.55; }
+  .site-footer__legal-links a:hover, .site-footer__cookie-btn:hover { color: var(--color-brass-light); opacity: 1; }
+  .site-footer__cookie-btn {
+    background: none; border: none; padding: 0; cursor: pointer;
+    font: inherit; letter-spacing: inherit;
+  }
+  @media (max-width: 960px) {
+    .site-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 620px) {
+    .site-footer { padding-left: 22px; padding-right: 22px; }
+    .site-footer__grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  }
+</style>

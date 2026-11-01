@@ -1,0 +1,196 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Button } from '../components/ui/Button';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { Badge } from '../components/ui/Badge';
+import { Divider } from '../components/ui/Divider';
+import { Testimonials } from '../components/islands/Testimonials';
+import { META } from '../lib/site';
+import heroVilla from '../assets/hero-villa.png';
+import crest from '../assets/crest.png';
+import imgDestination from '../assets/img-destination.png';
+import imgDining from '../assets/img-dining.png';
+import imgHeritage from '../assets/img-club-heritage.png';
+
+const [title, description] = META['/'];
+
+const voices = [
+  { quote: 'We arrived with clubs and an appetite, and for eight days lifted not a finger. The finest week we have given ourselves.', name: 'R. & M. Callahan', detail: 'The Signature Journey · September 2025' },
+  { quote: 'Dinner at Le Coquillage, a round above the Atlantic, and never once a bill. That is the whole trick, and they have mastered it.', name: 'James Ellory', detail: 'The Standard Journey · May 2025' },
+  { quote: 'I came for the golf; my wife came for the coast. We both left saying it was the best-organised holiday of our lives.', name: 'Dr. P. Hargreave', detail: 'The 8-Day Journey · June 2025' },
+];
+const atmospheres = [
+  { slug: 'coast', img: imgDestination, title: 'The Golf', copy: 'Old, beautiful French seaside courses — and your own English-speaking pro at your side all week, committed to your game.' },
+  { slug: 'dining', img: imgDining, title: 'The Table', copy: 'Fine dining and beautiful wines every day, set against sea-side cliffs and breathtaking scenery.' },
+  { slug: 'restore', img: imgHeritage, title: 'The Ease', copy: 'Small groups, true luxury, everything taken care of. Touchless — you never see a bill — with a 24/7 concierge.' },
+];
+const weeks = (await getCollection('availability'))
+  .map((w) => w.data)
+  .filter((w) => w.featured)
+  .sort((a, b) => a.order - b.order);
+const tiers = [
+  { eyebrow: 'Standard Tier', name: 'EMERIA Dinard', copy: 'Anchored at EMERIA Dinard Hôtel Thalasso & Spa — the largest thalassotherapy institute on the coast, and the heart of our restorative rhythm.', cta: 'Explore the Standard journey' },
+  { eyebrow: 'Signature Tier', name: 'Hôtel Barrière', copy: 'Anchored at Hôtel Barrière Le Grand Hôtel Dinard, a Belle-Époque grand hotel facing the bay of Saint-Malo, member of Leading Hotels of the World.', cta: 'Explore the Signature journey' },
+];
+const trust = [
+  ['France-based', 'A team on the ground, not a call centre'],
+  ['Intimate', 'Four guests to a journey, never a crowd'],
+  ['Named-host', 'One concierge, from enquiry to farewell'],
+  ['Fully handled', 'No wallet, no logistics — only the days themselves'],
+];
+---
+<BaseLayout title={title} description={description}
+  ogDescription="Championship links, Michelin tables, and a touchless, walletless week on the Emerald Coast of Brittany. You will never see a bill during your trip.">
+  <main id="main">
+    <section class="hero">
+      <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--right" width={420} densities={[1]} loading="eager" />
+      <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--left" width={420} densities={[1]} loading="eager" />
+      <div class="hero__content">
+        <Image src={crest} alt="" height={104} densities={[1, 2]} loading="eager" class="hero__crest" />
+        <h1 class="display-xl">Bespoke luxury golf travel, beautifully arranged.</h1>
+        <p class="hero__lead">France golf holidays shaped by fine dining, beautiful scenery, attentive hospitality, and the quiet ease of having every detail handled.</p>
+        <div class="hero__ctas">
+          <Button href="/availability">View available departures</Button>
+          <Button variant="secondary" href="/enquire">Enquire about a private journey</Button>
+        </div>
+      </div>
+    </section>
+    <Divider ornament tone="brass" style={{ maxWidth: 320, margin: '0 auto' }} />
+
+    <section class="sec center" style="--max:780px; --pt:80px; --pb:20px">
+      <Eyebrow rules tone="brass">The Fairway Atelier Experience</Eyebrow>
+      <p class="intro">
+        Eight unhurried days on the Emerald Coast of Brittany — championship links by day, three-Michelin tables by night, and the calm of a place that runs entirely without you having to ask.
+      </p>
+    </section>
+
+    <section class="sec" style="--max:1200px; --pt:56px; --pb:88px">
+      <div class="grid grid-3">
+        {atmospheres.map((a) => (
+          <a href={`/journal/${a.slug}`} class="atmos">
+            <Image src={a.img} alt={a.title} class="media media--4x3 atmos__img" widths={[360, 720]} sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
+            <h3>{a.title}</h3>
+            <p>{a.copy}</p>
+            <span class="read-more">Read more</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="band band--tint" style="--max:900px; --pt:80px; --pb:80px">
+      <div class="inner">
+        <Eyebrow rules tone="brass">Available Departures</Eyebrow>
+        <h2 class="display-md center departures__title">The next bookable weeks</h2>
+        <ul class="departures" role="list">
+          {weeks.map((w) => (
+            <li class="departures__row">
+              <span class="departures__dates">{w.dates}</span>
+              <span class="departures__tier">{w.summary}</span>
+              <span><Badge tone={w.status} dot>{w.label}</Badge></span>
+            </li>
+          ))}
+        </ul>
+        <div class="center" style="margin-top:28px"><Button href="/availability">See full availability</Button></div>
+      </div>
+    </section>
+
+    <section class="sec" style="--max:1080px; --pt:88px; --pb:88px">
+      <Eyebrow rules tone="brass">Two Ways to Stay</Eyebrow>
+      <h2 class="display-lg center tiers__title">Choose the rhythm that suits you</h2>
+      <div class="grid split">
+        {tiers.map((t) => (
+          <div class="frame">
+            <div class="frame__inner tier">
+              <div class="label">{t.eyebrow}</div>
+              <h3>{t.name}</h3>
+              <p>{t.copy}</p>
+              <div class="label label--12">Priced on request</div>
+              <div style="margin-top:18px"><Button variant="ghost" href="/journey">{t.cta}</Button></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="band band--inverse" style="--max:1000px; --pt:76px; --pb:76px">
+      <div class="inner grid grid-4 center" style="--gap:32px">
+        {trust.map(([t, c]) => (
+          <div>
+            <div class="trust__title">{t}</div>
+            <div class="trust__rule" aria-hidden="true"></div>
+            <p class="trust__copy">{c}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="band band--tint" style="--max:760px; --pt:84px; --pb:84px">
+      <div class="inner voices">
+        <Eyebrow rules tone="brass">In Their Words</Eyebrow>
+        <Testimonials client:idle voices={voices} />
+      </div>
+    </section>
+
+    <section class="sec center" style="--pt:84px; --pb:84px">
+      <Eyebrow tone="brass">Begin</Eyebrow>
+      <h2 class="display-lg closing__title">Your week in Brittany starts with a conversation.</h2>
+      <Button size="lg" href="/enquire">View available departures</Button>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .hero { position: relative; overflow: hidden; text-align: center; padding: 92px 40px 84px; }
+  .hero__villa {
+    position: absolute; top: 24px; width: 420px; height: auto; opacity: 0.5; pointer-events: none;
+    -webkit-mask-image: linear-gradient(to left, #000 40%, transparent);
+    mask-image: linear-gradient(to left, #000 40%, transparent);
+  }
+  .hero__villa--right { right: 0; }
+  .hero__villa--left { left: 0; transform: scaleX(-1); }
+  .hero__content { position: relative; z-index: 1; }
+  .hero__crest { height: 104px; width: auto; }
+  .hero h1 { margin: 26px auto 0; max-width: 800px; }
+  .hero__lead { font-size: 17px; margin: 20px auto 0; max-width: 620px; }
+  .hero__ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+
+  .intro { font-family: var(--font-display); font-size: 24px; line-height: 1.5; color: var(--text-heading); margin: 22px 0 0; }
+
+  .atmos { display: block; color: inherit; }
+  .atmos:hover { color: inherit; }
+  .atmos__img { border: 1px solid var(--border-hairline); }
+  .atmos h3 { font-size: 22px; margin: 18px 0 8px; }
+  .atmos p { font-size: 14px; margin: 0 0 12px; }
+  .atmos:hover .read-more { color: var(--accent); }
+
+  .departures__title { margin: 14px 0 36px; }
+  .departures { list-style: none; margin: 0; padding: 0; background: var(--surface-card); border: 1px solid var(--border-hairline); }
+  .departures__row {
+    display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 20px; align-items: center; padding: 18px 24px;
+  }
+  .departures__row + .departures__row { border-top: 1px solid var(--border-hairline); }
+  .departures__dates { font-family: var(--font-display); font-size: 19px; color: var(--text-heading); }
+  .departures__tier { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.06em; color: var(--text-muted); }
+
+  .tiers__title { margin: 14px 0 44px; }
+  .tier { padding: 32px 34px; }
+  .tier h3 { font-size: 28px; margin: 10px 0 12px; }
+  .tier p { font-size: 14px; margin: 0 0 18px; }
+
+  .trust__title { font-family: var(--font-display); font-size: 24px; color: var(--text-on-dark); }
+  .trust__rule { width: 24px; height: 1px; background: var(--color-brass-light); margin: 12px auto; }
+  .trust__copy { font-family: var(--font-sans); font-size: 13px; color: var(--text-on-dark); opacity: 0.7; margin: 0; }
+
+  .voices { display: flex; flex-direction: column; align-items: center; }
+
+  .closing__title { margin: 12px auto 20px; max-width: 620px; }
+
+  @media (max-width: 620px) {
+    .hero { padding: 60px 22px 56px; }
+    .hero__villa { width: 200px; opacity: 0.32; }
+    .departures__row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .tier { padding: 28px 24px; }
+  }
+</style>

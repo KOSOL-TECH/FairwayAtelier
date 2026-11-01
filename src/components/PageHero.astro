@@ -1,0 +1,24 @@
+---
+import { Eyebrow } from './ui/Eyebrow';
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  intro?: string;
+  /** Intro font size; the prototype uses 17px on content pages and 16px on Journey */
+  introSize?: number;
+  pb?: number;
+}
+const { eyebrow, title, intro, introSize = 17, pb = 40 } = Astro.props;
+---
+<section class="sec center page-hero" style={`--max:820px; --pt:72px; --pb:${pb}px`}>
+  <Eyebrow rules tone="brass">{eyebrow}</Eyebrow>
+  <h1 class="display-lg">{title}</h1>
+  {intro && <p style={`font-size:${introSize}px`}>{intro}</p>}
+  <slot />
+</section>
+
+<style>
+  h1 { margin: 16px 0 18px; }
+  p { margin: 0; }
+</style>

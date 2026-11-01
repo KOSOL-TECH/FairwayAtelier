@@ -1,0 +1,77 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { META } from '../../lib/site';
+import imgDestination from '../../assets/img-destination.png';
+import imgHeritage from '../../assets/img-club-heritage.png';
+import imgDining from '../../assets/img-dining.png';
+import imgGolfBag from '../../assets/img-golf-bag.png';
+import imgArch from '../../assets/img-arch-lineart.png';
+
+const [title, description] = META['/journal'];
+// These notes are not written yet, so the cards are not links (see README: open decisions).
+const featured = { img: imgDestination, cat: 'The Coast', title: 'Why we chose Brittany', excerpt: 'On the Emerald Coast, the golf, the table, and the sea are never more than a few minutes apart — and that proximity is the whole idea.' };
+const posts = [
+  { img: imgHeritage, cat: 'The Courses', title: 'A round at Dinard, France\'s second-oldest course', read: '5 min' },
+  { img: imgDining, cat: 'The Table', title: 'An afternoon with the Roellingers at Le Coquillage', read: '7 min' },
+  { img: imgGolfBag, cat: 'The Craft', title: 'What “no wallet” really takes to arrange', read: '4 min' },
+  { img: imgArch, cat: 'The Coast', title: 'Crossing to Mont-Saint-Michel, quietly', read: '6 min' },
+];
+---
+<BaseLayout title={title} description={description}>
+  <main id="main" class="sec" style="--max:1200px; --pt:0px; --pb:96px">
+    <PageHero eyebrow="Journal" title="Notes from the coast"
+      intro="Dispatches on the courses, the tables, and the craft of an effortless week — written by the team who arrange them." />
+    <article class="featured grid split-wide">
+      <Image src={featured.img} alt="" class="featured__img" widths={[600, 1200]} sizes="(max-width: 960px) 100vw, 600px" />
+      <div class="featured__body">
+        <div class="label">Featured · {featured.cat}</div>
+        <h2 class="display-sm">{featured.title}</h2>
+        <p>{featured.excerpt}</p>
+        <span class="read-more featured__more">Read the note</span>
+      </div>
+    </article>
+    <div class="grid grid-2">
+      {posts.map((p) => (
+        <article class="post">
+          <Image src={p.img} alt="" class="post__img" widths={[300, 600]} sizes="(max-width: 620px) 100vw, 150px" />
+          <div class="post__body">
+            <div class="label">{p.cat}</div>
+            <h3>{p.title}</h3>
+            <div class="post__read">{p.read} read</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .featured {
+    --gap: 40px; align-items: center; margin-bottom: 40px;
+    background: var(--surface-card); border: 1px solid var(--border-hairline);
+  }
+  .featured__img { display: block; width: 100%; height: 100%; min-height: 300px; object-fit: cover; }
+  .featured__body { padding: 36px 44px 36px 12px; }
+  .featured h2 { margin: 12px 0; }
+  .featured p { font-size: 15px; margin: 0 0 18px; }
+  .featured__more { font-size: 12px; }
+  .post {
+    display: grid; grid-template-columns: 150px 1fr; align-items: stretch;
+    border: 1px solid var(--border-hairline); background: var(--surface-card);
+  }
+  .post__img { display: block; width: 100%; height: 100%; min-height: 150px; object-fit: cover; }
+  .post__body { padding: 22px 24px; display: flex; flex-direction: column; justify-content: center; }
+  .post h3 { font-size: 21px; margin: 8px 0 10px; line-height: 1.2; }
+  .post__read { font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); }
+  @media (max-width: 960px) {
+    .featured { --gap: 0px; }
+    .featured__img { min-height: 240px; height: 240px; }
+    .featured__body { padding: 28px 24px; }
+  }
+  @media (max-width: 620px) {
+    .post { grid-template-columns: minmax(0, 1fr); }
+    .post__img { min-height: 200px; height: 200px; }
+  }
+</style>

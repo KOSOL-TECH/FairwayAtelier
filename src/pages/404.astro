@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { Button } from '../components/ui/Button';
+---
+<BaseLayout title="Page not found — Fairway Atelier" description="This page could not be found." index={false}>
+  <main id="main" class="sec center" style="--max:720px; --pt:96px; --pb:96px">
+    <Eyebrow rules tone="brass">Not found</Eyebrow>
+    <h1 class="display-lg" style="margin:16px 0 18px">This page has wandered off the fairway</h1>
+    <p style="font-size:16px; margin:0 0 32px">The page you were looking for has moved or no longer exists.</p>
+    <Button href="/">Return home</Button>
+  </main>
+</BaseLayout>

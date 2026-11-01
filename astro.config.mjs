@@ -9,7 +9,7 @@ export default defineConfig({
   site: 'https://fairwayatelier.com',
   output: 'static',
   trailingSlash: 'never',
-  build: { format: 'file' },
+  build: { format: 'preserve' },
   adapter: node({ mode: 'standalone' }),
   integrations: [react()],
 });

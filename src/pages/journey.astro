@@ -1,0 +1,107 @@
+---
+import { getImage } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { JourneyTiers, type Tier } from '../components/islands/JourneyTiers';
+import { META } from '../lib/site';
+import imgHeritage from '../assets/img-club-heritage.png';
+import imgDestination from '../assets/img-destination.png';
+
+const [title, description] = META['/journey'];
+const days = [
+  ['Day 1', 'Arrival in Paris', 'Met at CDG or Orly and driven to a five-star Paris hotel. No itinerary, no pressure — only a calm dinner and a good night\'s sleep. The trip begins the moment your car door closes.'],
+  ['Day 2', 'Le Jules Verne, then the calm chapter', 'A lazy Paris morning, then lunch at Le Jules Verne inside the Eiffel Tower (two Michelin stars). Your chauffeur is waiting at the South Pillar; a short transfer to Montparnasse, then TGV Première to Brittany — a restful two hours rather than four in a car. A driver meets your carriage at Rennes; you are at your hotel on the Emerald Coast by early evening.'],
+  ['Day 3', 'Golf de Dinard', 'The heritage opener — the second-oldest course in France (1887), minutes from your hotel. A round with your own English-speaking PGA professional, an unhurried lunch at the course, and the afternoon at your pace. Your companion has the thalasso and the coast.'],
+  ['Day 4', 'The coastal links', 'Saint-Cast Côte d\'Émeraude or Pléneuf-Val-André, chosen for the week\'s weather and light. Cliff-top fairways above the Atlantic, a table near the course, and home before dusk.'],
+  ['Day 5', 'The centrepiece', 'A day that breathes. A thalasso morning, an optional private crossing to Mont-Saint-Michel, then the headline dinner of the week — Le Coquillage at Saint-Méloir-des-Ondes, three Michelin stars, sea and garden. Delivered before late-week fatigue, when you can savour every course.'],
+  ['Day 6', 'The third round', 'The alternate coastal course, then a refined but calmer dinner — a local table chosen for the group\'s rhythm rather than another long tasting.'],
+  ['Day 7', 'The final round & a quiet close', 'One last course, then a closing dinner that is intimate rather than epic — a single Michelin star at Castelbrac, or your hotel\'s own grand dining room. A fitting end, not an endurance test.'],
+  ['Day 8', 'Homeward, unhurried', 'A late breakfast, a driver to Rennes, TGV to Paris, and a car waiting for your flight. Everything already arranged — right down to the timing of your departure.'],
+];
+
+const toImg = async (src: ImageMetadata) => {
+  const img = await getImage({ src, format: 'webp' });
+  return { src: img.src, width: src.width, height: src.height };
+};
+const tiers: Tier[] = [
+  { tab: 'Standard — EMERIA', eyebrow: 'Standard Tier', hotel: 'EMERIA Dinard Hôtel Thalasso & Spa', img: await toImg(imgHeritage),
+    lead: 'Your home for six nights is a destination thalassotherapy resort — the largest wellness institute on the Emerald Coast, and the restorative heart of the journey.',
+    points: ['2,800 m² thalasso & spa institute — 58 treatment rooms', 'Heated seawater pools facing the sea', 'Sea-view rooms; the Horizon bar\'s panoramic view', 'Minutes from Dinard Golf; twenty from Saint-Malo'] },
+  { tab: 'Signature — Barrière', eyebrow: 'Signature Tier', hotel: 'Hôtel Barrière Le Grand Hôtel Dinard', img: await toImg(imgDestination),
+    lead: 'A five-star Belle-Époque grand hotel facing the bay of Saint-Malo, member of Leading Hotels of the World — for those who want the formal grand-hotel signal.',
+    points: ['Le George V dining room; the 333 Café piano-bar', 'Spa Diane Barrière; indoor pool, hammam, sauna', 'Casino Barrière adjacent; a short walk to the beach', 'Optional: charter aviation, a Castelbrac Michelin-room night, a Paris extension'] },
+];
+---
+<BaseLayout title={title} description={description}>
+  <main id="main">
+    <PageHero eyebrow="The 8-Day Journey" title="Eight days on the Emerald Coast" introSize={16} pb={36}
+      intro="An 8-day, 7-night journey for a single group of four — four rounds of championship golf, two unmistakable Michelin moments, and the whole of Brittany arranged around you." />
+
+    <section class="band band--inverse center" style="--max:860px; --pt:72px; --pb:72px">
+      <div class="inner">
+        <div class="label label--11 label--light">The Fairway Atelier Difference</div>
+        <h2 class="display-md on-dark diff__title">You will never see a bill during your trip.</h2>
+        <p class="on-dark-soft diff__copy">
+          No cheques at dinner, no tabs at the bar, no settling up with a driver. Timing, reservations, transfers, tee times, restaurant access, and every companion arrangement are handled before you arrive and quietly maintained throughout. Touchless and walletless, from the first car door to the last. You carry a set of clubs and an appetite — we carry everything else.
+        </p>
+        <div class="diff__points">
+          {['Nothing to sign', 'Nothing to arrange', 'Nothing to carry'].map((x) => (
+            <div class="diff__point"><span class="diamond diamond--light" aria-hidden="true"></span>{x}</div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" style="--max:860px; --pt:72px; --pb:72px">
+      <Eyebrow rules tone="brass">Day by Day</Eyebrow>
+      <h2 class="display-md center days__title">The rhythm of the week</h2>
+      <p class="center days__intro">The same narrative whichever tier you choose. The hotels differ; the care does not.</p>
+      <ol class="days" role="list">
+        {days.map(([d, t, copy]) => (
+          <li class="day">
+            <div class="label label--11 day__label">{d}</div>
+            <div>
+              <h3>{t}</h3>
+              <p>{copy}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="band tiers" style="--max:1000px; --pt:76px; --pb:76px">
+      <div class="inner">
+        <Eyebrow rules tone="brass">Choose Your Tier</Eyebrow>
+        <h2 class="display-md center tiers__title">Two hotels, one journey</h2>
+        <JourneyTiers client:idle tiers={tiers} />
+        <p class="disclosure tiers__disclosure">
+          Named restaurants and courses are illustrative of the experience we curate. Each week&apos;s final inclusions are confirmed during your consultation call.
+        </p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .diff__title { margin: 16px 0 18px; }
+  .diff__copy { max-width: 660px; margin: 0 auto; }
+  .diff__points { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; margin-top: 36px; }
+  .diff__point { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 20px; color: var(--text-on-dark); }
+
+  .days__title { margin: 14px 0 12px; }
+  .days__intro { max-width: 600px; margin: 0 auto 24px; }
+  .days { list-style: none; margin: 0; padding: 0; }
+  .day { display: grid; grid-template-columns: 120px 1fr; gap: 28px; padding: 26px 0; border-top: 1px solid var(--border-hairline); }
+  .day__label { padding-top: 4px; }
+  .day h3 { font-size: 24px; margin: 0 0 6px; }
+  .day p { font-size: 15px; margin: 0; }
+
+  .tiers { background: var(--surface-tint); border-top: 1px solid var(--border-hairline); }
+  .tiers__title { margin: 14px 0 32px; }
+  .tiers__disclosure { margin-top: 20px; max-width: 700px; }
+
+  @media (max-width: 620px) {
+    .day { grid-template-columns: 84px 1fr; gap: 16px; }
+  }
+</style>

@@ -1,0 +1,73 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { META } from '../lib/site';
+
+const [title, description] = META['/availability'];
+const weeks = (await getCollection('availability')).map((w) => w.data).sort((a, b) => a.order - b.order);
+const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'waitlist' ? 'Join the waitlist' : 'Enquire about this week';
+---
+<BaseLayout title={title} description={description}>
+  <main id="main" class="sec" style="--max:900px; --pt:72px; --pb:96px">
+    <div class="center head">
+      <Eyebrow rules tone="brass">Availability</Eyebrow>
+      <h1 class="display-lg">Opened weeks for 2026</h1>
+      <p>Each week runs for a single group of four. Select a week to see tier availability and the tables confirmed so far.</p>
+    </div>
+    <div class="weeks">
+      {weeks.map((w, i) => (
+        <details class="week" name="week" open={i === 0}>
+          <summary class="week__summary">
+            <span class="week__dates">{w.dates}</span>
+            <Badge tone={w.status} dot>{w.label}</Badge>
+            <span class="chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="week__detail">
+            <div><div class="label week__lbl">Standard — EMERIA</div><div class="week__val">{w.standard}</div></div>
+            <div><div class="label week__lbl">Signature — Barrière</div><div class="week__val">{w.signature}</div></div>
+            <div><div class="label week__lbl">Headline tables</div><div class="week__val">{w.dining}</div></div>
+            <div class="week__cta">
+              <Button size="sm" href="/enquire" disabled={w.status === 'sold'}>{cta(w.status)}</Button>
+            </div>
+          </div>
+        </details>
+      ))}
+    </div>
+    <p class="disclosure foot">
+      Named restaurants, hotels, and courses are illustrative of the experience. Final inclusions per trip are subject to availability and confirmed during the consultation call.
+    </p>
+  </main>
+</BaseLayout>
+
+<style>
+  .head { margin-bottom: 44px; }
+  .head h1 { margin: 16px 0 12px; }
+  .head p { font-size: 16px; max-width: 560px; margin: 0 auto; }
+  .weeks { display: flex; flex-direction: column; gap: 14px; }
+  .week { border: 1px solid var(--border-hairline); background: var(--surface-card); }
+  .week__summary {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center;
+    padding: 20px 24px; cursor: pointer; list-style: none;
+  }
+  .week__summary::-webkit-details-marker { display: none; }
+  .week[open] .chevron { transform: rotate(-135deg); }
+  .chevron { width: 8px; height: 8px; }
+  .week__dates { font-family: var(--font-display); font-size: 21px; color: var(--text-heading); }
+  .week__detail {
+    border-top: 1px solid var(--border-hairline); padding: 22px 24px; background: var(--surface-tint);
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+  }
+  .week__lbl { margin-bottom: 6px; }
+  .week__val { font-family: var(--font-sans); font-size: 14px; color: var(--text-body); }
+  .week__cta { grid-column: 1 / -1; margin-top: 8px; }
+  .foot { margin-top: 32px; max-width: 700px; }
+  @media (max-width: 960px) {
+    .week__detail { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 620px) {
+    .week__summary { gap: 14px; padding: 18px 20px; }
+  }
+</style>

@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { Button } from '../components/ui/Button';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { Divider } from '../components/ui/Divider';
+import { META } from '../lib/site';
+
+const [title, description] = META['/experience'];
+const handled = [
+  ['Timing', 'The whole week is sequenced for you — arrival, rounds, tables, and rest in a rhythm designed around energy, not logistics.'],
+  ['Reservations', 'Michelin tables and hotel dining confirmed before your week is ever offered. Le Jules Verne and Le Coquillage are held in advance.'],
+  ['Transfers', 'A Mercedes and an English-speaking driver in region; TGV Première between Paris and Brittany. You are met at the carriage door.'],
+  ['Tee times', 'Four courses, secured and sequenced, each round with your own PGA professional — present, personal, never overbearing.'],
+  ['Companions', 'A parallel itinerary for those not playing: thalasso, Saint-Malo, Cancale oysters, Mont-Saint-Michel, the Belle-Époque coast.'],
+  ['On-trip support', 'A named host by your side from booking to farewell — reachable by phone, message, or WhatsApp, twelve hours a day.'],
+];
+const paths = [
+  ['Balanced', 'The flagship — four rounds and two Michelin moments, in perfect balance with rest and the coast.'],
+  ['Intensive Golf', 'Five rounds, extended practice, and an optional academy block for those chasing rhythm and improvement.'],
+  ['Culinary France', 'One round or none — the France holiday for couples who come for the table and the scenery.'],
+  ['Companion', 'A full non-golf journey running alongside the rounds, wanting for nothing.'],
+];
+---
+<BaseLayout title={title} description={description}>
+  <main id="main">
+    <PageHero eyebrow="The Experience" title="The art of leaving nothing to arrange"
+      intro="Fairway Atelier is built on a single operating principle: complete guest care. Arrive, settle in, enjoy the experience — and never once worry about the details. They have already been thought through for you." />
+
+    <section class="band band--inverse center" style="--max:760px; --pt:72px; --pb:72px">
+      <div class="inner">
+        <div class="label label--11 label--light">The No-Wallet Promise</div>
+        <h2 class="display-md on-dark promise__title">You will never see a bill during your trip.</h2>
+        <p class="on-dark-soft">
+          No tabs, no cheques, no settling up. From the car that meets your flight to the table on your final evening, everything is arranged, confirmed, and paid ahead. The experience is touchless and walletless by design — the truest luxury is the absence of friction.
+        </p>
+      </div>
+    </section>
+
+    <section class="sec" style="--max:1080px">
+      <Eyebrow rules tone="brass">Everything, Handled</Eyebrow>
+      <h2 class="display-md center sec-title">What we take care of</h2>
+      <div class="grid grid-3" style="--gap:40px">
+        {handled.map(([t, c]) => (
+          <div>
+            <div class="item-head"><span class="diamond" aria-hidden="true"></span><h3>{t}</h3></div>
+            <p class="item-copy">{c}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="band band--tint" style="--max:900px">
+      <div class="inner grid split" style="--gap:48px">
+        <div>
+          <h2 class="display-sm pair__title">A France-based team, a group of four</h2>
+          <p class="pair__copy">We are established in France, and every supplier — hotel, chauffeur, professional, restaurant — is contracted and cared for by us directly. Each journey takes a single group of four, hosted by one named concierge who knows your week by heart. Not a call centre. A person, on the ground, who has your number and answers it.</p>
+        </div>
+        <div>
+          <h2 class="display-sm pair__title">Chosen with you, not sold to you</h2>
+          <p class="pair__copy">Before you travel, we build a preference profile — dietary needs, playing level, the things that make a room feel like yours. The two hotel tiers, the courses, the tables, and any extension are shaped on a single consultation call. The journey arrives already fitted to you.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" style="--max:1080px">
+      <Eyebrow rules tone="brass">Ways to Travel</Eyebrow>
+      <h2 class="display-md center sec-title">Four paths through the same coast</h2>
+      <div class="grid grid-4" style="--gap:20px">
+        {paths.map(([t, c]) => (
+          <div class="path">
+            <h3>{t}</h3>
+            <p>{c}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="sec center" style="--max:720px; --pt:20px; --pb:88px">
+      <Divider ornament tone="brass" style={{ maxWidth: 220, margin: '0 auto 32px' }} />
+      <p class="founder">
+        &ldquo;We built the journey we wanted to be given — unhurried, beautifully fed, and entirely handled. You should never have to reach for your wallet to enjoy a place. Brittany simply made it easy.&rdquo;
+      </p>
+      <p class="label label--11 label--muted founder__by">The Founders</p>
+      <div style="margin-top:32px"><Button href="/journey">See the 8-day journey</Button></div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .promise__title { margin: 16px 0 18px; }
+  .sec-title { margin: 14px 0 44px; }
+  .item-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .item-head h3 { font-size: 22px; }
+  .item-copy { font-size: 14px; margin: 0; }
+  .pair__title { margin: 0 0 14px; }
+  .pair__copy { font-size: 15px; margin: 0; }
+  .path { border: 1px solid var(--border-hairline); background: var(--surface-card); padding: 26px 24px; }
+  .path h3 { font-size: 21px; margin: 0 0 10px; }
+  .path p { font-size: 13px; margin: 0; }
+  .founder { font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.5; color: var(--text-heading); }
+  .founder__by { margin-top: 18px; }
+</style>

@@ -1,0 +1,31 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import { ATOUT_FRANCE, CONTACT_EMAIL, META } from '../lib/site';
+
+const [title, description] = META['/mentions-legales'];
+const rows = [
+  ['Company', 'Fairway Atelier SAS'],
+  ['Legal form', 'Société par actions simplifiée (SAS)'],
+  ['Share capital', '€XX,000'],
+  ['Registered office', '[Street], Dinard, 35800, France'],
+  ['RCS / SIREN', 'RCS Saint-Malo XXX XXX XXX'],
+  ['VAT (TVA)', 'FR XX XXX XXX XXX'],
+  ['Travel licence', `Atout France ${ATOUT_FRANCE}`],
+  ['Financial guarantee', '[Guarantor], per Art. L.211-18 Code du tourisme'],
+  ['Professional insurance', '[Insurer], [policy no.]'],
+  ['Publication director', '[Name], President'],
+  ['Contact', CONTACT_EMAIL],
+];
+---
+<LegalLayout title={title} description={description} heading="Mentions légales" updated="July 2026"
+  placeholder="Draft for review by French counsel before launch. Registration numbers below are placeholders.">
+  <p>In accordance with Article 6 of French Law No. 2004-575 of 21 June 2004 (LCEN), the following information is provided to users of this website.</p>
+  <h2>Publisher</h2>
+  <dl>
+    {rows.map(([k, v]) => <div class="row"><dt>{k}</dt><dd>{v}</dd></div>)}
+  </dl>
+  <h2>Hosting</h2>
+  <p>This website is hosted by [Host name], [address], [contact]. All servers are located within the European Union.</p>
+  <h2>Intellectual property</h2>
+  <p>All content — text, images, logos, and the Fairway Atelier name and crest — is the property of Fairway Atelier SAS or its licensors and may not be reproduced without prior written consent.</p>
+</LegalLayout>

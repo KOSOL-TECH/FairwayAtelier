@@ -1,0 +1,51 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  updated: string;
+  /** Review note shown above the text until counsel signs off */
+  placeholder: string;
+}
+const { title, description, heading, updated, placeholder } = Astro.props;
+---
+<BaseLayout title={title} description={description}>
+  <main id="main" class="sec legal" style="--max:820px; --pt:72px; --pb:96px">
+    <header class="center">
+      <div class="label label--12">Legal</div>
+      <h1 class="display-lg">{heading}</h1>
+      <p class="updated">Last updated {updated}</p>
+      <div class="rule" aria-hidden="true"></div>
+    </header>
+    <div class="legal__body">
+      <p class="placeholder">{placeholder}</p>
+      <slot />
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  h1 { margin: 14px 0 10px; }
+  .updated { font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .rule { width: 40px; height: 1px; background: var(--accent); margin: 24px auto 40px; }
+  .placeholder {
+    font-family: var(--font-sans); font-size: 12px; font-style: italic; color: var(--text-muted);
+    background: var(--surface-tint); border-left: 2px solid var(--accent); padding: 10px 14px; margin: 0 0 20px;
+  }
+  .legal__body :global(h2) { font-family: var(--font-display); font-size: var(--text-display-sm); color: var(--text-heading); margin: 36px 0 12px; }
+  .legal__body :global(p:not(.placeholder)) { font-family: var(--font-sans); font-size: 15px; line-height: var(--leading-body); color: var(--text-body); margin: 0 0 14px; }
+  .legal__body :global(a) { color: var(--accent); }
+  .legal__body :global(dl) { margin: 0; }
+  .legal__body :global(.row) {
+    display: grid; grid-template-columns: 200px 1fr; gap: 20px; padding: 12px 0; border-top: 1px solid var(--border-hairline);
+  }
+  .legal__body :global(dt) {
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--accent);
+  }
+  .legal__body :global(dd) { margin: 0; font-family: var(--font-sans); font-size: 14px; color: var(--text-body); }
+  @media (max-width: 620px) {
+    .legal__body :global(.row) { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  }
+</style>

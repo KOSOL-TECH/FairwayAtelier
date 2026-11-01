@@ -1,0 +1,81 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Eyebrow } from '../../components/ui/Eyebrow';
+import { Divider } from '../../components/ui/Divider';
+import { Button } from '../../components/ui/Button';
+import { SITE_URL, canonical } from '../../lib/site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('journal');
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: CollectionEntry<'journal'> };
+const a = entry.data;
+const { Content } = await render(entry);
+const title = `${a.title} — Fairway Atelier`;
+
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: a.title,
+  description: a.lede,
+  image: new URL(a.hero.src, SITE_URL).href,
+  mainEntityOfPage: canonical(`/journal/${entry.id}`),
+  author: { '@type': 'Organization', name: 'Fairway Atelier' },
+  publisher: { '@type': 'Organization', name: 'Fairway Atelier', logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.png` } },
+};
+---
+<BaseLayout title={title} description={a.lede} ogType="article" jsonLd={[articleLd]}>
+  <main id="main">
+    <section class="sec center" style="--max:820px; --pt:64px; --pb:8px">
+      <a href="/" class="label label--11 label--muted back">← Home</a>
+      <div style="margin-top:28px"><Eyebrow rules tone="brass">{a.eyebrow}</Eyebrow></div>
+      <div class="label label--12 kicker">{a.kicker}</div>
+      <h1 class="display-lg">{a.title}</h1>
+    </section>
+    <section class="sec" style="--max:1000px; --pt:0px; --pb:0px">
+      <Image src={a.hero} alt={a.kicker} class="hero" widths={[640, 1000, 2000]} sizes="(max-width: 1000px) 100vw, 920px" loading="eager" />
+    </section>
+    <section class="sec" style="--max:720px; --pt:48px; --pb:0px">
+      <p class="lede">{a.lede}</p>
+    </section>
+    <article class="sec prose" style="--max:720px; --pt:40px; --pb:8px">
+      <Content />
+    </article>
+    <section class="sec" style="--max:720px; --pt:24px; --pb:24px">
+      <Divider ornament tone="brass" style={{ maxWidth: 220, margin: '0 auto' }} />
+    </section>
+    <section class="sec center" style="--pt:8px; --pb:40px">
+      <div class="label label--11 label--muted continue">Continue reading</div>
+      <a href={`/journal/${a.next}`} class="next">{a.nextLabel} →</a>
+    </section>
+    <section class="band band--inverse center" style="--max:620px; --pt:72px; --pb:72px">
+      <div class="inner">
+        <h2 class="display-md on-dark cta__title">Begin your week in Brittany</h2>
+        <Button href="/enquire">Enquire about a journey</Button>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .back:hover { color: var(--accent); }
+  .kicker { margin-top: 20px; }
+  h1 { margin: 12px 0 22px; }
+  .hero { display: block; width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border: 1px solid var(--border-hairline); }
+  .lede { font-family: var(--font-display); font-size: 24px; font-style: italic; line-height: 1.5; color: var(--text-heading); margin: 0; }
+  .prose :global(h2) { font-family: var(--font-display); font-size: var(--text-display-sm); color: var(--text-heading); margin: 28px 0 12px; }
+  .prose :global(p) { font-family: var(--font-sans); font-size: 16px; line-height: var(--leading-body); color: var(--text-body); margin: 0 0 18px; }
+  .prose :global(blockquote) {
+    margin: 20px 0 36px; padding: 4px 0 4px 28px; border-left: 2px solid var(--accent);
+    font-family: var(--font-display); font-size: 26px; font-style: italic; line-height: 1.4; color: var(--text-heading);
+  }
+  .prose :global(blockquote p) { font: inherit; color: inherit; margin: 0; }
+  .continue { margin-bottom: 10px; }
+  .next { font-family: var(--font-display); font-size: 30px; color: var(--text-heading); border-bottom: 1px solid var(--accent); padding-bottom: 4px; }
+  .next:hover { color: var(--accent); }
+  .cta__title { margin: 0 0 24px; }
+</style>

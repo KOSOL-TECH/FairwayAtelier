@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { Button } from '../components/ui/Button';
+import { META } from '../lib/site';
+
+const [title, description] = META['/private'];
+const options = [
+  ['A private week', 'Take an entire week for your own group of four to eight — the whole journey, closed to others, on dates arranged around you.'],
+  ['Charter aviation', 'Private transfer in place of the TGV, or direct charter into Dinard–Pleurtuit, for those who prefer to arrive on their own clock.'],
+  ['A Paris extension', 'Bookend the week with nights in the capital — a suite, a table, and a car, handled to the same standard.'],
+  ['Beyond golf', 'Sailing on the Rance, a private Mont-Saint-Michel crossing, cellar visits, or a day given entirely to the coast.'],
+];
+---
+<BaseLayout title={title} description={description}>
+  <main id="main">
+    <PageHero eyebrow="Private Journeys" title="Entirely your own"
+      intro="Beyond our scheduled weeks, we design private journeys from a blank page — same standard of care, shaped wholly around your group, your dates, and your interests." />
+    <section class="sec" style="--max:1080px; --pt:24px; --pb:72px">
+      <div class="grid split">
+        {options.map(([t, c]) => (
+          <div class="option">
+            <div class="option__head"><span class="diamond" aria-hidden="true"></span><h3>{t}</h3></div>
+            <p>{c}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+    <section class="band band--inverse center" style="--max:640px">
+      <div class="inner">
+        <div class="label label--11 label--light">By Introduction</div>
+        <h2 class="display-md on-dark cta__title">Every private journey begins with a conversation</h2>
+        <p class="on-dark-soft cta__copy">Tell us who is travelling and what would make the week yours. We will design a proposal, and — as with every Fairway Atelier journey — you will never see a bill once you arrive.</p>
+        <Button href="/enquire">Enquire about a private journey</Button>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .option { border: 1px solid var(--border-hairline); background: var(--surface-card); padding: 28px 30px; }
+  .option__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .option h3 { font-size: 23px; }
+  .option p { font-size: 14px; margin: 0; }
+  .cta__title { margin: 16px 0 18px; }
+  .cta__copy { margin: 0 0 32px; }
+  @media (max-width: 620px) { .option { padding: 24px 22px; } }
+</style>
