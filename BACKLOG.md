@@ -36,7 +36,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-03 | Continuous deploys from GitHub | Client + Dev | — | Repo side done: CI workflow, `.node-version`, docs. Client: connect the repo in Cloudflare Workers Builds (needs the Cloudflare GitHub app authorised on KOSOL-TECH/FairwayAtelier). Build `npm test && npm run build`, deploy `npx wrangler deploy`, production branch `main`, non-production branch builds off. Then verify one push deploys. |
+| T-03 | Continuous deploys from GitHub | Client + Dev | — | Repo side done: CI workflow, `.node-version`, docs. Client connected the repo in Cloudflare Workers Builds on 2026-11-01; verifying the first push deploy. Settings (needs the Cloudflare GitHub app authorised on KOSOL-TECH/FairwayAtelier). Build `npm test && npm run build`, deploy `npx wrangler deploy`, production branch `main`, non-production branch builds off. Then verify one push deploys. |
 
 ## Done
 
