@@ -34,9 +34,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 ## In progress
 
-| ID | Task | Owner | Blocked by | Notes |
-|---|---|---|---|---|
-| T-03 | Continuous deploys from GitHub | Client + Dev | — | Repo side done: CI workflow, `.node-version`, docs. Client connected the repo in Cloudflare Workers Builds on 2026-11-01; verifying the first push deploy. Settings (needs the Cloudflare GitHub app authorised on KOSOL-TECH/FairwayAtelier). Build `npm test && npm run build`, deploy `npx wrangler deploy`, production branch `main`, non-production branch builds off. Then verify one push deploys. |
+_Nothing in progress._
 
 ## Done
 
@@ -59,6 +57,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | X-15 | Receive mail at atelier@fairwayatelier.com (D-08) | 2026-11-01 | Client decision: forward to valgreskai@gmail.com for now. Cloudflare Email Routing enabled (MX route1-3.mx.cloudflare.net, SPF `include:_spf.mx.cloudflare.net`, DKIM `cf2024-1`); destination verified; rule "atelier@ to valgreskai". Configured in the Cloudflare dashboard, not this repo. Other addresses at the domain are not routed (no catch-all). |
 | X-16 | Automated tests and CI build check (was T-14) | 2026-11-01 | Vitest (`npm test`): 19 tests for enquiry validation/normalisation and consent expiry/storage (`src/lib/**/*.test.ts`). `.github/workflows/ci.yml` runs tests + build (incl. `astro check`) on every push and PR, Node from `.node-version`. |
 | X-17 | Lighthouse audit and fixes (was T-12) | 2026-11-01 | 10 live pages, mobile + desktop. After fixes: accessibility, best practices and SEO 100 everywhere; performance 96–100 (mobile LCP 2.2–2.8 s, mostly the cookie banner on first visit). Fixed: colour contrast (see D-07), heading order on Home and Private, link-in-text in the banner, limited badge on Availability. Not fixed (minor): logo/crest images a few KB larger than needed, React runtime unused-JS hint, render-blocking CSS hint, the Cloudflare beacon (D-09). |
+| X-18 | Continuous deploys from GitHub (was T-03) | 2026-11-01 | Cloudflare Workers Builds connected to KOSOL-TECH/FairwayAtelier: every push to `main` runs `npm test && npm run build` then `npx wrangler deploy`; non-production branch builds off. Verified with commit a4bdacf: Workers Builds and GitHub CI both green, deployed as version 6dd92db0, live site checked. |
 
 ## Closed (not done)
 
