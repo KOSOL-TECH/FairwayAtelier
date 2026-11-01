@@ -17,12 +17,13 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | D-05 | Legal pages in robots.txt vs sitemap | `robots.txt` disallows the four legal pages, but the sitemap lists them (both as in the prototype). Recommendation: drop them from the sitemap. |
 | D-06 | Add Cloudflare Turnstile to the enquiry form? | Today: honeypot + rate limit (5/min/IP). Turnstile is free and adds stronger bot protection. |
 | D-07 | Sign off copy and design deviations | Copy written in development (no source copy existed): "Sending…" button state, send-failure message, skip link, 404 page. Design: footer legal row opacity 0.55 instead of 0.5 (WCAG AA contrast); form clears after a successful send. |
+| D-08 | Mailbox for atelier@fairwayatelier.com | The domain has no MX or SPF records (checked 2026-11-01), so the address the site publishes can't receive mail. Pick a mailbox host (Google Workspace, Microsoft 365, or Cloudflare Email Routing to forward to an existing inbox). The existing DMARC record is `p=quarantine`, so outgoing mail also needs SPF and DKIM. |
 
 ## To do
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-02 | Connect fairwayatelier.com | Client + Dev | T-01 | Move DNS to Cloudflare, uncomment `routes` in `wrangler.jsonc`, redeploy. |
+| T-02 | Connect fairwayatelier.com | Client + Dev | — | Zone added to Cloudflare (Free) 2026-11-01; records imported from GoDaddy match. Client: activate and switch nameservers at GoDaddy. Dev: delete the GoDaddy parking A records (13.248.243.5, 76.223.105.230) and the `www` CNAME, then uncomment `routes` (add www) in `wrangler.jsonc` and redeploy. `_domainconnect` CNAME is GoDaddy-only and can be deleted. |
 | T-03 | Continuous deploys from GitHub | Dev | T-01 | Workers & Pages → Import repository; build `npm run build`, deploy `npx wrangler deploy`. |
 | T-04 | Enquiry emails (team notification + guest confirmation) | Dev | D-01 | Add `EnquirySink` implementations in `src/lib/enquiry/handler.ts`; keys via `wrangler secret put`. |
 | T-05 | Push enquiries to the CRM | Dev | D-02 | Another `EnquirySink`. |
@@ -36,6 +37,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | T-13 | Real-device testing | Dev | T-01 | iOS Safari and Android Chrome: menu, consent banner, form, dialog, tabs. |
 | T-14 | Automated tests and CI build check | Dev | — | Unit tests for the enquiry validator and consent expiry; run `npm run build` (includes `astro check`) on every push. |
 | T-16 | Set `workers_dev` and `preview_urls` explicitly in `wrangler.jsonc` | Dev | T-02 | Both default to on (Wrangler warns). Once fairwayatelier.com is live, turn off the workers.dev URL and preview URLs so the site isn't reachable on duplicate hostnames. |
+| T-17 | Set up email DNS for fairwayatelier.com | Client + Dev | D-08, D-01 | MX for the chosen mailbox host, SPF, DKIM for the sending provider; review the DMARC policy. Must be done before launch. |
 
 ## In progress
 
