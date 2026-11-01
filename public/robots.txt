@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /mentions-legales
+Disallow: /privacy
+Disallow: /terms
+Disallow: /cookies
+
+Sitemap: https://fairwayatelier.com/sitemap.xml
