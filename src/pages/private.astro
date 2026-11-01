@@ -20,7 +20,7 @@ const options = [
       <div class="grid split">
         {options.map(([t, c]) => (
           <div class="option">
-            <div class="option__head"><span class="diamond" aria-hidden="true"></span><h3>{t}</h3></div>
+            <div class="option__head"><span class="diamond" aria-hidden="true"></span><h2>{t}</h2></div>
             <p>{c}</p>
           </div>
         ))}
@@ -40,7 +40,7 @@ const options = [
 <style>
   .option { border: 1px solid var(--border-hairline); background: var(--surface-card); padding: 28px 30px; }
   .option__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .option h3 { font-size: 23px; }
+  .option h2 { font-size: 23px; }
   .option p { font-size: 14px; margin: 0; }
   .cta__title { margin: 16px 0 18px; }
   .cta__copy { margin: 0 0 32px; }

@@ -71,7 +71,7 @@ const trust = [
         {atmospheres.map((a) => (
           <a href={`/journal/${a.slug}`} class="atmos">
             <Image src={a.img} alt={a.title} class="media media--4x3 atmos__img" widths={[360, 720]} sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
-            <h3>{a.title}</h3>
+            <h2>{a.title}</h2>
             <p>{a.copy}</p>
             <span class="read-more">Read more</span>
           </a>
@@ -161,9 +161,9 @@ const trust = [
   .atmos { display: block; color: inherit; }
   .atmos:hover { color: inherit; }
   .atmos__img { border: 1px solid var(--border-hairline); }
-  .atmos h3 { font-size: 22px; margin: 18px 0 8px; }
+  .atmos h2 { font-size: 22px; margin: 18px 0 8px; }
   .atmos p { font-size: 14px; margin: 0 0 12px; }
-  .atmos:hover .read-more { color: var(--accent); }
+  .atmos:hover .read-more { color: var(--accent-text); }
 
   .departures__title { margin: 14px 0 36px; }
   .departures { list-style: none; margin: 0; padding: 0; background: var(--surface-card); border: 1px solid var(--border-hairline); }

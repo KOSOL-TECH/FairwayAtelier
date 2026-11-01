@@ -9,6 +9,7 @@ npm install
 npm run dev         # http://localhost:4321
 npm run build       # astro check + build into dist/
 npm run preview     # serve the production build locally in workerd (Cloudflare's runtime)
+npm test            # unit tests (Vitest): enquiry validation, consent expiry
 npm run deploy      # build and deploy to Cloudflare Workers (run `npx wrangler login` first)
 npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangler.jsonc
 ```
@@ -52,7 +53,8 @@ The site deploys as one Cloudflare Worker using `@astrojs/cloudflare`. The prere
 - **URLs:** `html_handling: "drop-trailing-slash"` in `wrangler.jsonc` keeps every URL matching its canonical (`/journal`, not `/journal/`); trailing-slash and `.html` variants redirect.
 - **Images** are optimised with Sharp at build time (`imageService: 'compile'`), so no Cloudflare Images subscription is needed.
 - **Sessions** are disabled (`session: false`), so no KV namespace is created.
-- **First deploy:** `npx wrangler login`, then `npm run deploy`. The site appears at `fairway-atelier.<your-subdomain>.workers.dev`.
-- **Custom domain:** add fairwayatelier.com to Cloudflare (move its DNS there), then uncomment the `routes` entry in `wrangler.jsonc` and deploy again.
-- **Continuous deploys:** in the Cloudflare dashboard, Workers & Pages → Create → Import a repository, pick this repo, build command `npm run build`, deploy command `npx wrangler deploy`.
+- **Domains:** the Worker serves `fairwayatelier.com` and `www.fairwayatelier.com` as custom domains (`routes` in `wrangler.jsonc`); the `workers.dev` address and preview URLs are off. A zone Redirect Rule sends `www` to the apex and Always Use HTTPS is on; both live in the Cloudflare dashboard.
+- **Continuous deploys:** Cloudflare Workers Builds deploys every push to `main`. Build command `npm test && npm run build`, deploy command `npx wrangler deploy`, Node version from `.node-version`. A failing test or `astro check` stops the deploy.
+- **CI:** `.github/workflows/ci.yml` runs the tests and the build on every push and pull request, so other branches are checked before they reach `main`.
+- **Manual deploy:** `npx wrangler login`, then `npm run deploy`. Always use `npm run deploy` (not a bare `wrangler deploy`) after changing `wrangler.jsonc`: Astro copies the config into `dist/` at build time.
 - **Spam:** Cloudflare Turnstile can be added to the form later if the honeypot and rate limit are not enough.

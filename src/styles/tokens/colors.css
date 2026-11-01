@@ -23,10 +23,13 @@
   --surface-accent: var(--color-fairway-green);
   --text-heading: var(--color-charcoal);
   --text-body: var(--color-ink-soft);
-  --text-muted: #8B8677;
+  --text-muted: #6F6B5F;
   --text-on-dark: #F5F1E8;
   --text-accent: var(--color-fairway-green);
   --accent: var(--color-antique-brass);
+  /* Brass and muted for small text: darkened just enough for WCAG AA (4.5:1)
+     on cream, parchment and white. Lines and fills keep the brand brass. */
+  --accent-text: #85663B;
   --accent-hover: var(--color-brass-light);
   --border-hairline: var(--color-stone-line);
   --border-rule: var(--color-antique-brass);

@@ -36,13 +36,13 @@ const { title, description, heading, updated, placeholder } = Astro.props;
   }
   .legal__body :global(h2) { font-family: var(--font-display); font-size: var(--text-display-sm); color: var(--text-heading); margin: 36px 0 12px; }
   .legal__body :global(p:not(.placeholder)) { font-family: var(--font-sans); font-size: 15px; line-height: var(--leading-body); color: var(--text-body); margin: 0 0 14px; }
-  .legal__body :global(a) { color: var(--accent); }
+  .legal__body :global(a) { color: var(--accent-text); }
   .legal__body :global(dl) { margin: 0; }
   .legal__body :global(.row) {
     display: grid; grid-template-columns: 200px 1fr; gap: 20px; padding: 12px 0; border-top: 1px solid var(--border-hairline);
   }
   .legal__body :global(dt) {
-    font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--accent);
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--accent-text);
   }
   .legal__body :global(dd) { margin: 0; font-family: var(--font-sans); font-size: 14px; color: var(--text-body); }
   @media (max-width: 620px) {

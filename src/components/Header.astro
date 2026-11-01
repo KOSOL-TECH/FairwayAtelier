@@ -64,8 +64,8 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
   .site-nav__link {
     font-size: 12px; letter-spacing: 0.14em; padding: 0 0 3px; border-bottom: 1px solid transparent;
   }
-  .site-nav__link:hover, .mobile-menu__link:hover { color: var(--accent); }
-  .site-nav__link[aria-current='page'] { color: var(--accent); border-bottom-color: var(--accent); }
+  .site-nav__link:hover, .mobile-menu__link:hover { color: var(--accent-text); }
+  .site-nav__link[aria-current='page'] { color: var(--accent-text); border-bottom-color: var(--accent); }
 
   .menu-toggle {
     display: none; flex-direction: column; gap: 5px; width: 40px; padding: 8px;
@@ -85,7 +85,7 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
   }
   .mobile-menu[hidden] { display: none; }
   .mobile-menu__link { font-size: 15px; letter-spacing: 0.18em; padding: 14px 0; }
-  .mobile-menu__link[aria-current='page'] { color: var(--accent); }
+  .mobile-menu__link[aria-current='page'] { color: var(--accent-text); }
 
   @media (max-width: 1000px) {
     .site-nav { display: none; }
