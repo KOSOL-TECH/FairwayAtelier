@@ -17,7 +17,6 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | D-05 | Legal pages in robots.txt vs sitemap | `robots.txt` disallows the four legal pages, but the sitemap lists them (both as in the prototype). Recommendation: drop them from the sitemap. |
 | D-06 | Add Cloudflare Turnstile to the enquiry form? | Today: honeypot + rate limit (5/min/IP). Turnstile is free and adds stronger bot protection. |
 | D-07 | Sign off copy and design deviations | Copy written in development (no source copy existed): "Sending…" button state, send-failure message, skip link, 404 page. Design: footer legal row opacity 0.55 instead of 0.5 (WCAG AA contrast); form clears after a successful send. |
-| D-08 | Mailbox for atelier@fairwayatelier.com | The domain has no MX or SPF records (checked 2026-11-01), so the address the site publishes can't receive mail. Pick a mailbox host (Google Workspace, Microsoft 365, or Cloudflare Email Routing to forward to an existing inbox). The existing DMARC record is `p=quarantine`, so outgoing mail also needs SPF and DKIM. |
 
 ## To do
 
@@ -28,14 +27,12 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | T-05 | Push enquiries to the CRM | Dev | D-02 | Another `EnquirySink`. |
 | T-06 | Wire up analytics | Dev | D-03 | Set env vars; update the cookie policy's cookie table. |
 | T-07 | Add Turnstile to the enquiry form | Dev | D-06 | Client widget + server-side Siteverify in `/api/enquiry`. |
-| T-08 | Legal pages ready for launch | Client | — | Fill every `[bracketed]` field (RCS/SIREN, VAT, share capital, insurer, financial guarantor, deposit %, dates, DPO contact). Host is now Cloudflare, Inc., so the "All servers are located within the European Union" sentence must change. French counsel sign-off. |
-| T-09 | Atout France registration number | Client | — | Placeholder `IM0XX2600XX`; set once in `src/lib/site.ts` (`ATOUT_FRANCE`). |
 | T-10 | Licensed photography | Client + Dev | — | Replace the low-res brand-sheet crops in `src/assets/` with licensed hotel, course and dining photos; Astro outputs responsive WebP/AVIF. |
 | T-11 | SVG logo, wordmark and crest | Client + Dev | — | Request from the client; replace the PNGs. |
 | T-12 | Lighthouse audit (≥95 performance, accessibility, SEO) | Dev | — | Run against the deployed site, fix findings. |
 | T-13 | Real-device testing | Dev | — | iOS Safari and Android Chrome: menu, consent banner, form, dialog, tabs. |
 | T-14 | Automated tests and CI build check | Dev | — | Unit tests for the enquiry validator and consent expiry; run `npm run build` (includes `astro check`) on every push. |
-| T-17 | Set up email DNS for fairwayatelier.com | Client + Dev | D-08, D-01 | MX for the chosen mailbox host, SPF, DKIM for the sending provider; review the DMARC policy. Must be done before launch. |
+| T-17 | Email DNS for sending | Client + Dev | D-01 | Receiving is done (X-15). When the sending provider is chosen, add its DKIM and merge it into the existing SPF record (one SPF record only), then review DMARC (`p=quarantine`, reports go to a GoDaddy address `dmarc_rua@onsecureserver.net`). Replies from Gmail still come from valgreskai@gmail.com, not atelier@. |
 
 ## In progress
 
@@ -59,6 +56,7 @@ _Nothing in progress._
 | X-12 | Connect fairwayatelier.com (was T-02) | 2026-11-01 | Nameservers moved from GoDaddy to Cloudflare (felipe/joselyn); GoDaddy parking A records and www CNAME deleted; apex and www are Worker custom domains in `wrangler.jsonc`. Checked: pages, 404, sitemap, robots, enquiry API on https://fairwayatelier.com. Note: `npm run deploy` (not bare `wrangler deploy`) after config changes, since Astro copies the config into `dist/`. |
 | X-13 | Disable workers.dev and preview URLs (was T-16) | 2026-11-01 | `workers_dev: false`, `preview_urls: false` in `wrangler.jsonc`; the workers.dev address now returns 404. |
 | X-14 | Force HTTPS and redirect www to the apex (was T-18) | 2026-11-01 | Zone setting Always Use HTTPS on; Redirect Rule "Redirect www to apex" (301, keeps path and query) in the zone's dynamic redirect phase. Both live in the Cloudflare dashboard, not in this repo. Checked: http and www URLs reach https://fairwayatelier.com in one hop. |
+| X-15 | Receive mail at atelier@fairwayatelier.com (D-08) | 2026-11-01 | Client decision: forward to valgreskai@gmail.com for now. Cloudflare Email Routing enabled (MX route1-3.mx.cloudflare.net, SPF `include:_spf.mx.cloudflare.net`, DKIM `cf2024-1`); destination verified; rule "atelier@ to valgreskai". Configured in the Cloudflare dashboard, not this repo. Other addresses at the domain are not routed (no catch-all). |
 
 ## Closed (not done)
 
@@ -67,6 +65,8 @@ Items the client chose not to pursue for now. Move a row back to **To do** to re
 | ID | Task | Closed | Notes |
 |---|---|---|---|
 | T-15 | Enable 2FA on the Cloudflare account | 2026-11-01 | Client decision: not for now; may re-open later. |
+| T-08 | Legal pages ready for launch | 2026-11-01 | Parked by the client until further notice; re-open on their say-so. Still needed before launch: Fill every `[bracketed]` field (RCS/SIREN, VAT, share capital, insurer, financial guarantor, deposit %, dates, DPO contact). Host is now Cloudflare, Inc., so the "All servers are located within the European Union" sentence must change. French counsel sign-off. |
+| T-09 | Atout France registration number | 2026-11-01 | Parked by the client until further notice; re-open on their say-so. Still needed before launch: Placeholder `IM0XX2600XX`; set once in `src/lib/site.ts` (`ATOUT_FRANCE`). |
 
 ---
 
