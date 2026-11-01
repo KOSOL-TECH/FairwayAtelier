@@ -36,7 +36,6 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | T-12 | Lighthouse audit (≥95 performance, accessibility, SEO) | Dev | T-01 | Run against the deployed site, fix findings. |
 | T-13 | Real-device testing | Dev | T-01 | iOS Safari and Android Chrome: menu, consent banner, form, dialog, tabs. |
 | T-14 | Automated tests and CI build check | Dev | — | Unit tests for the enquiry validator and consent expiry; run `npm run build` (includes `astro check`) on every push. |
-| T-15 | Enable 2FA on the Cloudflare account | Client | — | Account currently does not enforce two-factor authentication. |
 
 ## In progress
 
@@ -56,6 +55,14 @@ _Nothing in progress._
 | X-08 | Move hosting to Cloudflare Workers | 2026-11-01 | Rate-limit binding, drop-trailing-slash, `npm run deploy`. |
 | X-09 | Cloudflare agent tooling | 2026-11-01 | Claude Code plugin (skills + MCP) and `cf` CLI installed and signed in on the developer machine. |
 | X-10 | Project backlog and agent rules | 2026-11-01 | `BACKLOG.md`; `CLAUDE.md` and `AGENTS.md` require every agent to check and update it. |
+
+## Closed (not done)
+
+Items the client chose not to pursue for now. Move a row back to **To do** to re-open it.
+
+| ID | Task | Closed | Notes |
+|---|---|---|---|
+| T-15 | Enable 2FA on the Cloudflare account | 2026-11-01 | Client decision: not for now; may re-open later. |
 
 ---
 
