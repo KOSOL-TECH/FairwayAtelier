@@ -1,0 +1,14 @@
+<!-- @dsCard group="Components" viewport="700x300" subtitle="Guest pull-quote" name="Testimonial" -->
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../ds-loader.js"></script>
+<body style="margin:0;padding:32px 24px;display:flex;justify-content:center"><div id="root"></div>
+<script>
+loadDS('../..', ["../../components/core/Button.jsx","../../components/surfaces/Card.jsx","../../components/surfaces/Testimonial.jsx"], 'Testimonial').then(function (NS) {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    React.createElement(NS.Testimonial, { quote: 'We arrived with clubs and an appetite, and for eight days lifted not a finger. The finest week we have given ourselves.', name: 'R. & M. Callahan', detail: 'The Signature Journey · September 2025' })
+  );
+}).catch(function (e) { console.error('card failed:', e && (e.stack || e.message)); });
+</script></body>

@@ -1,0 +1,12 @@
+<!-- @dsCard group="Components" viewport="700x290" subtitle="Button, Badge, Eyebrow, Divider" name="Core" -->
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../ds-loader.js"></script>
+<body style="margin:0;padding:20px 24px"><div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:120px;padding:40px"><img src="../../assets/crest.png" alt="Fairway Atelier" style="height:64px;opacity:0.5"></div></div>
+<script>
+loadDS('../..', ["../../components/core/Badge.jsx","../../components/core/Button.jsx","../../components/core/Eyebrow.jsx","../../components/core/Divider.jsx","../../components/forms/Input.jsx","../../components/forms/Select.jsx","../../components/forms/Checkbox.jsx","../../components/forms/Radio.jsx","../../components/forms/Switch.jsx","../../components/surfaces/Card.jsx","../../components/surfaces/Tabs.jsx","../../components/surfaces/Dialog.jsx","./core-demo.jsx"], 'CoreDemo').then(function (NS) {
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(NS.CoreDemo));
+}).catch(function (e) { console.error('card failed:', e && (e.stack || e.message)); });
+</script></body>

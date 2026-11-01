@@ -1,0 +1,25 @@
+:root {
+  --font-display: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
+  --font-sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+
+  --text-display-xl: clamp(38px, 6.2vw, 64px);   /* hero headlines */
+  --text-display-lg: clamp(30px, 4.6vw, 44px);   /* page titles */
+  --text-display-md: clamp(25px, 3.4vw, 32px);   /* section titles */
+  --text-display-sm: clamp(21px, 2.4vw, 24px);   /* card titles */
+  --text-body-lg: 17px;
+  --text-body-md: 15px;
+  --text-body-sm: 13px;
+  --text-caption: 11px;
+
+  --leading-display: 1.1;
+  --leading-body: 1.65;
+
+  --tracking-caps: 0.22em;   /* uppercase Montserrat labels */
+  --tracking-wide: 0.08em;
+  --tracking-display: 0.01em;
+
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+}
