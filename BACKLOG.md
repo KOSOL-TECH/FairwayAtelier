@@ -35,7 +35,6 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | T-12 | Lighthouse audit (≥95 performance, accessibility, SEO) | Dev | — | Run against the deployed site, fix findings. |
 | T-13 | Real-device testing | Dev | — | iOS Safari and Android Chrome: menu, consent banner, form, dialog, tabs. |
 | T-14 | Automated tests and CI build check | Dev | — | Unit tests for the enquiry validator and consent expiry; run `npm run build` (includes `astro check`) on every push. |
-| T-18 | Force HTTPS and redirect www to the apex | Dev | — | http://fairwayatelier.com serves the page instead of redirecting: turn on SSL/TLS → Edge Certificates → Always Use HTTPS. www serves a duplicate (canonical tag points to the apex); add a Redirect Rule www → https://fairwayatelier.com (301, keep path). |
 | T-17 | Set up email DNS for fairwayatelier.com | Client + Dev | D-08, D-01 | MX for the chosen mailbox host, SPF, DKIM for the sending provider; review the DMARC policy. Must be done before launch. |
 
 ## In progress
@@ -59,6 +58,7 @@ _Nothing in progress._
 | X-11 | First deploy to Cloudflare Workers (was T-01) | 2026-11-01 | Live at https://fairway-atelier.fairway-atelier.workers.dev (version fb582578). Needed the account email verified first. Checked: pages 200, /journal/ redirects to /journal, 404 page, sitemap, robots, and /api/enquiry validation (422). |
 | X-12 | Connect fairwayatelier.com (was T-02) | 2026-11-01 | Nameservers moved from GoDaddy to Cloudflare (felipe/joselyn); GoDaddy parking A records and www CNAME deleted; apex and www are Worker custom domains in `wrangler.jsonc`. Checked: pages, 404, sitemap, robots, enquiry API on https://fairwayatelier.com. Note: `npm run deploy` (not bare `wrangler deploy`) after config changes, since Astro copies the config into `dist/`. |
 | X-13 | Disable workers.dev and preview URLs (was T-16) | 2026-11-01 | `workers_dev: false`, `preview_urls: false` in `wrangler.jsonc`; the workers.dev address now returns 404. |
+| X-14 | Force HTTPS and redirect www to the apex (was T-18) | 2026-11-01 | Zone setting Always Use HTTPS on; Redirect Rule "Redirect www to apex" (301, keeps path and query) in the zone's dynamic redirect phase. Both live in the Cloudflare dashboard, not in this repo. Checked: http and www URLs reach https://fairwayatelier.com in one hop. |
 
 ## Closed (not done)
 
