@@ -33,9 +33,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 ## In progress
 
-| ID | Task | Owner | Blocked by | Notes |
-|---|---|---|---|---|
-| T-04 | Enquiry emails (team notification + guest confirmation) | Dev | — | Claude Code session 2026-11-01. Client decision D-01: Cloudflare Email Sending. `src/lib/enquiry/email.ts` (+ tests), `EMAIL` send_email binding in `wrangler.jsonc`, `getEnquirySinks()` in `handler.ts`, docs. Committed and deploying; next, a live test enquiry. |
+_Nothing in progress._
 
 ## Decisions recorded
 
@@ -67,6 +65,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | X-17 | Lighthouse audit and fixes (was T-12) | 2026-11-01 | 10 live pages, mobile + desktop. After fixes: accessibility, best practices and SEO 100 everywhere; performance 96–100 (mobile LCP 2.2–2.8 s, mostly the cookie banner on first visit). Fixed: colour contrast (see D-07), heading order on Home and Private, link-in-text in the banner, limited badge on Availability. Not fixed (minor): logo/crest images a few KB larger than needed, React runtime unused-JS hint, render-blocking CSS hint, the Cloudflare beacon (D-09). |
 | X-18 | Continuous deploys from GitHub (was T-03) | 2026-11-01 | Cloudflare Workers Builds connected to KOSOL-TECH/FairwayAtelier: every push to `main` runs `npm test && npm run build` then `npx wrangler deploy`; non-production branch builds off. Verified with commit a4bdacf: Workers Builds and GitHub CI both green, deployed as version 6dd92db0, live site checked. |
 | X-19 | Email DNS for sending (was T-17) | 2026-11-01 | `npx wrangler email sending enable fairwayatelier.com` (after the Workers Paid upgrade, D-10). Cloudflare added MX, SPF and DKIM on `cf-bounce.fairwayatelier.com` only, so the apex SPF (Email Routing) and the existing DMARC record are unchanged. The domain was ready about 1 minute later; a Wrangler test send to atelier@ was queued. DMARC follow-up in T-19. |
+| X-20 | Enquiry emails: team notification + guest confirmation (was T-04) | 2026-11-01 | Cloudflare Email Sending (D-01) through the `EMAIL` binding, from atelier@fairwayatelier.com. `src/lib/enquiry/email.ts` + 6 tests; wired in `getEnquirySinks()`. Deployed in commit 1429cf2 (version 9d42d9d2). A live test enquiry (name "Test Enquiry (Claude)", guest address atelier@) returned 200, so the team send was accepted. Not yet checked: both emails arriving in the valgreskai@gmail.com inbox (not spam). New email copy is listed in D-07 for sign-off. |
 
 ## Closed (not done)
 
