@@ -1,21 +1,14 @@
-/**
- * Fixed-window, in-memory rate limit per client key. Adequate for a single
- * long-lived Node process; on serverless hosting each instance has its own
- * memory, so move this to the platform's KV/edge rate limiting (or Turnstile).
- */
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, { count: number; start: number }>();
+import { env } from 'cloudflare:workers';
 
-export function rateLimited(key: string, now = Date.now()): boolean {
-  const entry = hits.get(key);
-  if (!entry || now - entry.start > WINDOW_MS) {
-    hits.set(key, { count: 1, start: now });
-    if (hits.size > 10_000) {
-      for (const [k, v] of hits) if (now - v.start > WINDOW_MS) hits.delete(k);
-    }
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > MAX_PER_WINDOW;
+/**
+ * Per-IP limit on enquiry submissions, enforced by the Workers rate-limiting
+ * binding (configured in wrangler.jsonc: 5 requests per 60 seconds). The
+ * binding counts per Cloudflare location, so it is a spam brake, not an
+ * exact global quota.
+ */
+export async function rateLimited(key: string): Promise<boolean> {
+  const limiter = env.ENQUIRY_LIMITER;
+  if (!limiter) return false; // binding absent (e.g. misconfigured preview): fail open, honeypot still applies
+  const { success } = await limiter.limit({ key: `enquiry:${key}` });
+  return !success;
 }

@@ -62,7 +62,7 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...fields, company: honeypot.current?.value ?? '' }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; errors?: FieldErrors };
       if (res.status === 422 && body.errors) {
         setServerErrors(body.errors);
         setAttempt((n) => n + 1);

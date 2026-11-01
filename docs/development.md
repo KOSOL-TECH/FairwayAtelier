@@ -6,9 +6,11 @@ The production site is an Astro + TypeScript project at the repo root. `prototyp
 
 ```bash
 npm install
-npm run dev       # http://localhost:4321
-npm run build     # astro check + build into dist/
-npm run preview   # serve the production build (Node adapter)
+npm run dev         # http://localhost:4321
+npm run build       # astro check + build into dist/
+npm run preview     # serve the production build locally in workerd (Cloudflare's runtime)
+npm run deploy      # build and deploy to Cloudflare Workers (run `npx wrangler login` first)
+npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangler.jsonc
 ```
 
 ## Structure
@@ -24,6 +26,7 @@ npm run preview   # serve the production build (Node adapter)
 | `src/styles/` | Tokens (copied from the prototype), fonts, base, layout primitives, component CSS |
 | `src/lib/site.ts` | Per-route META, nav, sitemap entries, TravelAgency JSON-LD, Atout France number |
 | `src/lib/enquiry/` | Shared validation, the sink interface, rate limit |
+| `wrangler.jsonc` | Cloudflare Worker config: name, rate limiter, asset handling |
 
 Everything except `/api/enquiry` is prerendered to static HTML. Only the header menu (a small inline script), the cookie banner, the enquiry form, the Journey tier tabs and the Home testimonials ship client JS. The FAQ and availability accordions are native `<details>`.
 
@@ -34,14 +37,22 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 
 ## Enquiry endpoint
 
-`POST /api/enquiry` (JSON) validates with the same rules as the form, rejects a filled honeypot (`company`) silently, and rate-limits to 5 requests per 10 minutes per IP. Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. Today that is only `ConsoleSink`, which logs with the email and phone redacted.
+`POST /api/enquiry` (JSON) validates with the same rules as the form and rejects a filled honeypot (`company`) silently. It also rate-limits to 5 requests per 60 seconds per IP through the Workers rate-limiting binding `ENQUIRY_LIMITER` (`wrangler.jsonc`). Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. Today that is only `ConsoleSink`, which logs with the email and phone redacted (visible in the Worker's logs in the Cloudflare dashboard).
 
-To go live, add sinks for the team notification email, the guest confirmation and the CRM, and return them from `getEnquirySinks()`. A sink that throws makes the form show its error state and keeps the guest's input.
+To go live, add sinks for the team notification email, the guest confirmation and the CRM, and return them from `getEnquirySinks()`. A sink that throws makes the form show its error state and keeps the guest's input. API keys go in as secrets (`npx wrangler secret put NAME`, or `.dev.vars` locally) and are read with `import { env } from 'cloudflare:workers'`.
 
 ## Analytics
 
 Nothing loads until the guest accepts analytics, and nothing loads at all while `PUBLIC_ANALYTICS_SRC` is empty (see `.env.example`). Set it, plus `PUBLIC_ANALYTICS_DOMAIN` for Plausible, once a provider is chosen.
 
-## Hosting
+## Hosting (Cloudflare Workers)
 
-`astro.config.mjs` uses `@astrojs/node` (standalone) because the enquiry route needs a server. If the site goes to Netlify, Vercel or Cloudflare, swap the adapter. The rate limiter is in-memory, so on serverless it should move to the platform's KV or edge rate limiting, or be replaced by Cloudflare Turnstile.
+The site deploys as one Cloudflare Worker using `@astrojs/cloudflare`. The prerendered pages are served as static assets at no cost, and only `/api/enquiry` runs Worker code. The free Workers plan covers launch traffic. The paid plan (about $5 a month) is the step up if function requests ever pass the free daily allowance.
+
+- **URLs:** `html_handling: "drop-trailing-slash"` in `wrangler.jsonc` keeps every URL matching its canonical (`/journal`, not `/journal/`); trailing-slash and `.html` variants redirect.
+- **Images** are optimised with Sharp at build time (`imageService: 'compile'`), so no Cloudflare Images subscription is needed.
+- **Sessions** are disabled (`session: false`), so no KV namespace is created.
+- **First deploy:** `npx wrangler login`, then `npm run deploy`. The site appears at `fairway-atelier.<your-subdomain>.workers.dev`.
+- **Custom domain:** add fairwayatelier.com to Cloudflare (move its DNS there), then uncomment the `routes` entry in `wrangler.jsonc` and deploy again.
+- **Continuous deploys:** in the Cloudflare dashboard, Workers & Pages → Create → Import a repository, pick this repo, build command `npm run build`, deploy command `npx wrangler deploy`.
+- **Spam:** Cloudflare Turnstile can be added to the form later if the honeypot and rate limit are not enough.

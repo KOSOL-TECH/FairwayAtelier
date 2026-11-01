@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json(200, { ok: true });
   }
 
-  if (rateLimited(clientAddress ?? 'unknown')) {
+  if (await rateLimited(clientAddress ?? 'unknown')) {
     return json(429, { ok: false, error: 'rate_limited' });
   }
 

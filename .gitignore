@@ -22,3 +22,8 @@ Thumbs.db
 
 # local tooling
 .claude/
+
+# Cloudflare local state
+.wrangler/
+.dev.vars*
+!.dev.vars.example
