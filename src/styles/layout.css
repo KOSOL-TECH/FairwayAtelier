@@ -1,0 +1,81 @@
+/* ---------------------------------------------------------------
+   Layout primitives. Sections set their own rhythm through custom
+   properties: --max (inner width), --pt / --pb (vertical padding).
+   --------------------------------------------------------------- */
+.sec {
+  max-width: var(--max, none);
+  margin-inline: auto;
+  padding: var(--pt, 80px) 40px var(--pb, 80px);
+}
+/* Full-bleed band with a background; content constrained by .inner */
+.band { padding: var(--pt, 76px) 40px var(--pb, 76px); }
+.band > .inner { max-width: var(--max, 1000px); margin-inline: auto; }
+.band--tint {
+  background: var(--surface-tint);
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.band--inverse { background: var(--surface-inverse); }
+.center { text-align: center; }
+
+/* Grids */
+.grid { display: grid; gap: var(--gap, 28px); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Two-column split: collapses at tablet, unlike .grid-2 */
+.split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.split-wide { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+
+/* Type helpers */
+.display-xl { font-size: var(--text-display-xl); }
+.display-lg { font-size: var(--text-display-lg); }
+.display-md { font-size: var(--text-display-md); }
+.display-sm { font-size: var(--text-display-sm); }
+.label {
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-caps);
+  text-transform: uppercase; color: var(--accent);
+}
+.label--11 { font-size: 11px; }
+.label--12 { font-size: 12px; }
+.label--light { color: var(--color-brass-light); }
+.label--muted { color: var(--text-muted); }
+.on-dark { color: var(--text-on-dark); }
+.on-dark-soft { font-family: var(--font-sans); font-size: 16px; color: var(--text-on-dark); opacity: 0.8; }
+.disclosure {
+  text-align: center; font-family: var(--font-sans); font-size: 12px; color: var(--text-muted);
+  max-width: 720px; margin-inline: auto;
+}
+.diamond {
+  display: inline-block; width: 6px; height: 6px; flex-shrink: 0;
+  background: var(--accent); transform: rotate(45deg);
+}
+.diamond--light { background: var(--color-brass-light); }
+.read-more {
+  font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-caps);
+  text-transform: uppercase; color: var(--color-fairway-green);
+  border-bottom: 1px solid var(--accent); padding-bottom: 3px;
+}
+.chevron {
+  display: inline-block; width: 9px; height: 9px; flex-shrink: 0;
+  border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+  transform: rotate(45deg); transition: transform var(--dur-fast) var(--ease-standard);
+}
+.media { display: block; width: 100%; object-fit: cover; }
+.media--4x3 { aspect-ratio: 4 / 3; }
+
+/* ---- Tablet ---- */
+@media (max-width: 960px) {
+  .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .split, .split-wide { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 620px) {
+  .sec, .band { padding-inline: 22px; }
+  .sec, .band {
+    padding-top: var(--pt-m, min(var(--pt, 80px), 56px));
+    padding-bottom: var(--pb-m, min(var(--pb, 80px), 56px));
+  }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,0 +1,40 @@
+:root {
+  /* Brand palette (from Fairway Atelier brand sheet) */
+  --color-green-beige: #C8C1A8;
+  --color-fairway-green: #5F735B;
+  --color-charcoal: #2F3133;
+  --color-antique-brass: #A07B47;
+  --color-soft-stone: #D9D2C5;
+
+  /* Derived tints & shades */
+  --color-cream: #F4F0E8;          /* page background (Warm Cream, spec §3) */
+  --color-parchment: #F3EFE5;      /* alt section background */
+  --color-fairway-deep: #495846;   /* green hover / dark accents */
+  --color-brass-light: #BE9760;    /* brass hover / fine lines */
+  --color-ink-soft: #55575B;       /* secondary text */
+  --color-stone-line: #E4DECF;
+  --color-white: #FFFFFF;
+
+  /* Semantic aliases */
+  --surface-page: var(--color-cream);
+  --surface-card: var(--color-white);
+  --surface-tint: var(--color-parchment);
+  --surface-inverse: var(--color-charcoal);
+  --surface-accent: var(--color-fairway-green);
+  --text-heading: var(--color-charcoal);
+  --text-body: var(--color-ink-soft);
+  --text-muted: #8B8677;
+  --text-on-dark: #F5F1E8;
+  --text-accent: var(--color-fairway-green);
+  --accent: var(--color-antique-brass);
+  --accent-hover: var(--color-brass-light);
+  --border-hairline: var(--color-stone-line);
+  --border-rule: var(--color-antique-brass);
+  --focus-ring: rgba(160, 123, 71, 0.45);
+
+  /* Availability status (spec §5.1 /availability) */
+  --status-booking: var(--color-fairway-green);
+  --status-limited: var(--color-antique-brass);
+  --status-sold: var(--color-charcoal);
+  --status-waitlist: #8B8677;
+}
