@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Eyebrow } from '../components/ui/Eyebrow';
+import { EnquiryForm } from '../components/islands/EnquiryForm';
+import { getDateOptions } from '../lib/enquiry/date-options';
+import { META } from '../lib/site';
+
+const [title, description] = META['/enquire'];
+const dateOptions = await getDateOptions();
+---
+<BaseLayout title={title} description={description}>
+  <main id="main" class="sec" style="--max:720px; --pt:72px; --pb:96px">
+    <div class="center head">
+      <Eyebrow rules tone="brass">Enquire</Eyebrow>
+      <h1 class="display-lg">Enquire about a private journey</h1>
+      <p>Tell us a little, and a member of our France-based team will reply within 24 hours to arrange a 30–45 minute consultation call.</p>
+    </div>
+    <div class="frame enquiry-frame">
+      <div class="frame__inner enquiry-frame__inner">
+        <EnquiryForm client:load dateOptions={dateOptions} />
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .head { margin-bottom: 40px; }
+  .head h1 { margin: 16px 0 12px; }
+  .head p { font-size: 16px; max-width: 500px; margin: 0 auto; }
+  .enquiry-frame { box-shadow: var(--shadow-card); }
+  .enquiry-frame__inner { padding: 40px 44px; }
+  @media (max-width: 620px) {
+    .enquiry-frame__inner { padding: 28px 20px; }
+  }
+</style>
