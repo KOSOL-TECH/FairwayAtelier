@@ -10,31 +10,39 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Decision | Notes |
 |---|---|---|
-| D-01 | Transactional email provider | Needed for the team notification to atelier@fairwayatelier.com and the guest confirmation. Cloudflare Email Sending fits the current hosting; Resend or Postmark also work from a Worker. |
 | D-02 | CRM vendor | Enquiries must be pushed to it. Pick one with an HTTP API usable from a Worker. |
 | D-03 | Analytics provider | Plausible, Fathom or Matomo. No Google Analytics. Already gated behind consent; only `PUBLIC_ANALYTICS_SRC` / `PUBLIC_ANALYTICS_DOMAIN` need setting. |
 | D-04 | Journal cards without articles | The featured "Why we chose Brittany" and the four post cards on `/journal` have no articles behind them and are not links. Write them, link them to the existing three articles, or remove them. |
 | D-05 | Legal pages in robots.txt vs sitemap | `robots.txt` disallows the four legal pages, but the sitemap lists them (both as in the prototype). Recommendation: drop them from the sitemap. |
 | D-06 | Add Cloudflare Turnstile to the enquiry form? | Today: honeypot + rate limit (5/min/IP). Turnstile is free and adds stronger bot protection. |
-| D-07 | Sign off copy and design deviations | Copy written in development (no source copy existed): "Sending…" button state, send-failure message, skip link, 404 page. Design: footer legal row opacity 0.55 instead of 0.5 (WCAG AA contrast); form clears after a successful send. Added 2026-11-01 for WCAG AA (found by the Lighthouse audit): primary buttons use cream text instead of charcoal on the same green; small brass text uses a deeper brass `#85663B` (lines and fills keep `#A07B47`); muted text darkened to `#6F6B5F`; form fields use 16px text on phones (stops iPhone zoom); the cookie-policy link in the banner is underlined. |
+| D-07 | Sign off copy and design deviations | Copy written in development (no source copy existed): "Sending…" button state, send-failure message, skip link, 404 page. Design: footer legal row opacity 0.55 instead of 0.5 (WCAG AA contrast); form clears after a successful send. Added 2026-11-01 for WCAG AA (found by the Lighthouse audit): primary buttons use cream text instead of charcoal on the same green; small brass text uses a deeper brass `#85663B` (lines and fills keep `#A07B47`); muted text darkened to `#6F6B5F`; form fields use 16px text on phones (stops iPhone zoom); the cookie-policy link in the banner is underlined. Added 2026-11-01 for T-04: the enquiry emails in `src/lib/enquiry/email.ts`. The guest confirmation reuses the approved Thank-you dialog wording; new are the subjects ("Your enquiry with Fairway Atelier", "New enquiry: name (dates)"), the "For your records" recap line, "If anything changes in the meantime, simply reply to this email." and the sign-off. |
 | D-09 | Cloudflare Web Analytics beacon | Cloudflare injects its cookieless analytics script (`static.cloudflareinsights.com/beacon.min.js`) into every page, without asking for consent. The cookie policy says analytics only run with consent. Keep it (it sets no cookies) and update the policy, or turn it off: dashboard → Analytics & Logs → Web Analytics → fairwayatelier.com. The API shows the zone setting as off, so it was likely switched on in the dashboard. |
 
 ## To do
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-04 | Enquiry emails (team notification + guest confirmation) | Dev | D-01 | Add `EnquirySink` implementations in `src/lib/enquiry/handler.ts`; keys via `wrangler secret put`. |
 | T-05 | Push enquiries to the CRM | Dev | D-02 | Another `EnquirySink`. |
 | T-06 | Wire up analytics | Dev | D-03 | Set env vars; update the cookie policy's cookie table. |
 | T-07 | Add Turnstile to the enquiry form | Dev | D-06 | Client widget + server-side Siteverify in `/api/enquiry`. |
 | T-10 | Licensed photography | Client + Dev | — | Replace the low-res brand-sheet crops in `src/assets/` with licensed hotel, course and dining photos; Astro outputs responsive WebP/AVIF. |
 | T-11 | SVG logo, wordmark and crest | Client + Dev | — | Request from the client; replace the PNGs. |
 | T-13 | Real-device testing | Client + Dev | — | Emulated-phone checks done 2026-11-01 (layout, menu, banner, form validation, tabs; found and fixed iPhone zoom on form fields). Remaining: run `docs/device-testing.md` on a real iPhone and Android phone, including one real test enquiry to see the Thank-you dialog. |
-| T-17 | Email DNS for sending | Client + Dev | D-01 | Receiving is done (X-15). When the sending provider is chosen, add its DKIM and merge it into the existing SPF record (one SPF record only), then review DMARC (`p=quarantine`, reports go to a GoDaddy address `dmarc_rua@onsecureserver.net`). Replies from Gmail still come from valgreskai@gmail.com, not atelier@. |
+| T-19 | DMARC reports address | Client + Dev | — | DMARC is `p=quarantine; adkim=r; aspf=r`, and reports go to a leftover GoDaddy address (`dmarc_rua@onsecureserver.net`) nobody reads. Point `rua` at an address the client reads, or drop it. Also check one delivered enquiry email's headers for `dmarc=pass`. |
+| T-20 | Reply from atelier@ in Gmail | Client | — | Replies from Gmail still come from valgreskai@gmail.com. Optional: set up Gmail "Send mail as" atelier@ (needs an SMTP relay, since Email Sending has no SMTP). |
 
 ## In progress
 
-_Nothing in progress._
+| ID | Task | Owner | Blocked by | Notes |
+|---|---|---|---|---|
+| T-04 | Enquiry emails (team notification + guest confirmation) | Dev | — | Claude Code session 2026-11-01. Client decision D-01: Cloudflare Email Sending. `src/lib/enquiry/email.ts` (+ tests), `EMAIL` send_email binding in `wrangler.jsonc`, `getEnquirySinks()` in `handler.ts`, docs. Committed and deploying; next, a live test enquiry. |
+
+## Decisions recorded
+
+| ID | Decision | Answer |
+|---|---|---|
+| D-01 | Transactional email provider | 2026-11-01: Cloudflare Email Sending (binding `EMAIL`, no API key). |
+| D-10 | Upgrade to the Workers Paid plan ($5/month) | 2026-11-01: upgraded. Needed for Email Sending to reach guests; includes 3,000 emails/month, then $0.35 per 1,000. |
 
 ## Done
 
@@ -58,6 +66,7 @@ _Nothing in progress._
 | X-16 | Automated tests and CI build check (was T-14) | 2026-11-01 | Vitest (`npm test`): 19 tests for enquiry validation/normalisation and consent expiry/storage (`src/lib/**/*.test.ts`). `.github/workflows/ci.yml` runs tests + build (incl. `astro check`) on every push and PR, Node from `.node-version`. |
 | X-17 | Lighthouse audit and fixes (was T-12) | 2026-11-01 | 10 live pages, mobile + desktop. After fixes: accessibility, best practices and SEO 100 everywhere; performance 96–100 (mobile LCP 2.2–2.8 s, mostly the cookie banner on first visit). Fixed: colour contrast (see D-07), heading order on Home and Private, link-in-text in the banner, limited badge on Availability. Not fixed (minor): logo/crest images a few KB larger than needed, React runtime unused-JS hint, render-blocking CSS hint, the Cloudflare beacon (D-09). |
 | X-18 | Continuous deploys from GitHub (was T-03) | 2026-11-01 | Cloudflare Workers Builds connected to KOSOL-TECH/FairwayAtelier: every push to `main` runs `npm test && npm run build` then `npx wrangler deploy`; non-production branch builds off. Verified with commit a4bdacf: Workers Builds and GitHub CI both green, deployed as version 6dd92db0, live site checked. |
+| X-19 | Email DNS for sending (was T-17) | 2026-11-01 | `npx wrangler email sending enable fairwayatelier.com` (after the Workers Paid upgrade, D-10). Cloudflare added MX, SPF and DKIM on `cf-bounce.fairwayatelier.com` only, so the apex SPF (Email Routing) and the existing DMARC record are unchanged. The domain was ready about 1 minute later; a Wrangler test send to atelier@ was queued. DMARC follow-up in T-19. |
 
 ## Closed (not done)
 

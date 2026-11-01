@@ -20,6 +20,11 @@
       "simple": { "limit": 5, "period": 60 }
     }
   ],
+  // Enquiry emails (Cloudflare Email Service). The sender must be on a domain
+  // onboarded to Email Sending; sending to guests needs the Workers Paid plan.
+  "send_email": [
+    { "name": "EMAIL", "allowed_sender_addresses": ["atelier@fairwayatelier.com"] }
+  ],
   // Custom domains. Cloudflare creates the DNS records and certificates;
   // the hostnames must not have other DNS records.
   "routes": [

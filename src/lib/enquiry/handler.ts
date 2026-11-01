@@ -1,4 +1,6 @@
+import { env } from 'cloudflare:workers';
 import type { EnquiryFields } from './validate';
+import { GuestConfirmationEmail, TeamNotificationEmail } from './email';
 
 export interface Enquiry extends EnquiryFields {
   id: string;
@@ -9,10 +11,8 @@ export interface Enquiry extends EnquiryFields {
  * One step in processing an accepted enquiry. Implementations are run in order;
  * any failure is reported to the guest as "could not send" so they can retry.
  *
- * Planned implementations (not yet wired, see README "Open decisions"):
- *  - TeamNotificationEmail: notify atelier@fairwayatelier.com
- *  - GuestConfirmationEmail: confirm receipt to the guest
- *  - CrmSink: push the enquiry to the CRM (vendor to be chosen with the client)
+ * Implementations: ConsoleSink, TeamNotificationEmail and GuestConfirmationEmail
+ * (./email.ts). Planned: CrmSink, once the client picks a CRM (BACKLOG D-02).
  */
 export interface EnquirySink {
   readonly name: string;
@@ -27,9 +27,14 @@ export class ConsoleSink implements EnquirySink {
   }
 }
 
-/** The sinks every accepted enquiry is sent through. Replace the stub here. */
+/**
+ * The sinks every accepted enquiry is sent through. Without the `EMAIL`
+ * binding (e.g. `astro dev`) enquiries are only logged.
+ */
 export function getEnquirySinks(): EnquirySink[] {
-  return [new ConsoleSink()];
+  const mailer = env.EMAIL;
+  if (!mailer) return [new ConsoleSink()];
+  return [new ConsoleSink(), new TeamNotificationEmail(mailer), new GuestConfirmationEmail(mailer)];
 }
 
 export async function processEnquiry(fields: EnquiryFields, sinks = getEnquirySinks()): Promise<Enquiry> {

@@ -38,9 +38,15 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 
 ## Enquiry endpoint
 
-`POST /api/enquiry` (JSON) validates with the same rules as the form and rejects a filled honeypot (`company`) silently. It also rate-limits to 5 requests per 60 seconds per IP through the Workers rate-limiting binding `ENQUIRY_LIMITER` (`wrangler.jsonc`). Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. Today that is only `ConsoleSink`, which logs with the email and phone redacted (visible in the Worker's logs in the Cloudflare dashboard).
+`POST /api/enquiry` (JSON) validates with the same rules as the form and rejects a filled honeypot (`company`) silently. It also rate-limits to 5 requests per 60 seconds per IP through the Workers rate-limiting binding `ENQUIRY_LIMITER` (`wrangler.jsonc`). Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. They are, in order:
 
-To go live, add sinks for the team notification email, the guest confirmation and the CRM, and return them from `getEnquirySinks()`. A sink that throws makes the form show its error state and keeps the guest's input. API keys go in as secrets (`npx wrangler secret put NAME`, or `.dev.vars` locally) and are read with `import { env } from 'cloudflare:workers'`.
+1. `ConsoleSink` logs the enquiry with the email and phone redacted (visible in the Worker's logs in the Cloudflare dashboard).
+2. `TeamNotificationEmail` (`src/lib/enquiry/email.ts`) emails every field to atelier@fairwayatelier.com, with the guest as Reply-To, so replying answers the guest. If it fails, the request fails.
+3. `GuestConfirmationEmail` confirms receipt to the guest. A failure is logged but does not fail the request: the team already has the enquiry, and a retry would send them a duplicate.
+
+Both emails go out through the Cloudflare Email Service binding `EMAIL` (`wrangler.jsonc`), from atelier@fairwayatelier.com, so no API key is needed. The domain must be onboarded under **Email Service → Email Sending** in the dashboard (or with `npx wrangler email sending enable fairwayatelier.com`). Sending to guests, who are not verified addresses, needs the Workers Paid plan. Without the binding (`astro dev`) only `ConsoleSink` runs. Run `npm run cf-typegen` after changing bindings.
+
+The CRM is still to come (BACKLOG T-05). Add it as another sink in `getEnquirySinks()`. A sink that throws makes the form show its error state and keeps the guest's input. API keys go in as secrets (`npx wrangler secret put NAME`, or `.dev.vars` locally) and are read with `import { env } from 'cloudflare:workers'`.
 
 ## Analytics
 
