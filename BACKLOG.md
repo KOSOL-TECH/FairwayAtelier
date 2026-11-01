@@ -22,7 +22,6 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-01 | First deploy to Cloudflare Workers | Client + Dev | — | `npx wrangler login` (Client's account), then `npm run deploy`. Site appears at `fairway-atelier.<subdomain>.workers.dev`. |
 | T-02 | Connect fairwayatelier.com | Client + Dev | T-01 | Move DNS to Cloudflare, uncomment `routes` in `wrangler.jsonc`, redeploy. |
 | T-03 | Continuous deploys from GitHub | Dev | T-01 | Workers & Pages → Import repository; build `npm run build`, deploy `npx wrangler deploy`. |
 | T-04 | Enquiry emails (team notification + guest confirmation) | Dev | D-01 | Add `EnquirySink` implementations in `src/lib/enquiry/handler.ts`; keys via `wrangler secret put`. |
@@ -36,6 +35,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | T-12 | Lighthouse audit (≥95 performance, accessibility, SEO) | Dev | T-01 | Run against the deployed site, fix findings. |
 | T-13 | Real-device testing | Dev | T-01 | iOS Safari and Android Chrome: menu, consent banner, form, dialog, tabs. |
 | T-14 | Automated tests and CI build check | Dev | — | Unit tests for the enquiry validator and consent expiry; run `npm run build` (includes `astro check`) on every push. |
+| T-16 | Set `workers_dev` and `preview_urls` explicitly in `wrangler.jsonc` | Dev | T-02 | Both default to on (Wrangler warns). Once fairwayatelier.com is live, turn off the workers.dev URL and preview URLs so the site isn't reachable on duplicate hostnames. |
 
 ## In progress
 
@@ -55,6 +55,7 @@ _Nothing in progress._
 | X-08 | Move hosting to Cloudflare Workers | 2026-11-01 | Rate-limit binding, drop-trailing-slash, `npm run deploy`. |
 | X-09 | Cloudflare agent tooling | 2026-11-01 | Claude Code plugin (skills + MCP) and `cf` CLI installed and signed in on the developer machine. |
 | X-10 | Project backlog and agent rules | 2026-11-01 | `BACKLOG.md`; `CLAUDE.md` and `AGENTS.md` require every agent to check and update it. |
+| X-11 | First deploy to Cloudflare Workers (was T-01) | 2026-11-01 | Live at https://fairway-atelier.fairway-atelier.workers.dev (version fb582578). Needed the account email verified first. Checked: pages 200, /journal/ redirects to /journal, 404 page, sitemap, robots, and /api/enquiry validation (422). |
 
 ## Closed (not done)
 
