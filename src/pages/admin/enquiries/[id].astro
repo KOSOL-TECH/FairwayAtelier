@@ -1,0 +1,84 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import {
+  ENQUIRY_STATUSES, ENQUIRY_STATUS_LABEL, deleteEnquiry, getEnquiry, updateEnquiry, type EnquiryStatus,
+} from '../../../lib/enquiry/store';
+
+export const prerender = false;
+
+const enquiry = await getEnquiry(env.DB, Astro.params.id ?? '');
+if (!enquiry) return Astro.redirect('/admin/enquiries', 303);
+
+const email = Astro.locals.adminEmail!;
+const back = (msg: string) => Astro.redirect(`/admin/enquiries?saved=${encodeURIComponent(msg)}`, 303);
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  // The audit log records which enquiry changed, never the guest's details.
+  if (form.get('action') === 'delete') {
+    await deleteEnquiry(env.DB, enquiry.id);
+    await logChange(env.DB, email, 'delete', 'enquiry', enquiry.id);
+    return back(`The enquiry from ${enquiry.name} was deleted.`);
+  }
+  const status = String(form.get('status')) as EnquiryStatus;
+  const notes = String(form.get('internal_notes') ?? '').slice(0, 5000);
+  if (ENQUIRY_STATUSES.includes(status)) {
+    await updateEnquiry(env.DB, enquiry.id, status, notes);
+    await logChange(env.DB, email, 'update', 'enquiry', enquiry.id, {
+      ...(status !== enquiry.status && { status: [enquiry.status, status] }),
+      ...(notes !== enquiry.internal_notes && { notes: 'changed' }),
+    });
+    return back(`The enquiry from ${enquiry.name} was saved.`);
+  }
+}
+
+const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' });
+const first = enquiry.name.split(' ')[0];
+const mailto = `mailto:${encodeURIComponent(enquiry.email)}?subject=${encodeURIComponent('Your enquiry with Fairway Atelier')}&body=${encodeURIComponent(`Dear ${first},\n\n`)}`;
+const rows: [string, string][] = [
+  ['Received', `${when(enquiry.received_at)} (Paris)`],
+  ['Email', enquiry.email],
+  ['Phone', enquiry.phone || '—'],
+  ['Dates of interest', enquiry.dates],
+  ['Who is travelling', enquiry.party],
+  ['Tier', enquiry.tier],
+  ['Their notes', enquiry.message || '—'],
+  ['Reference', enquiry.id],
+];
+---
+<AdminLayout title={enquiry.name}>
+  <p><a href="/admin/enquiries">← All enquiries</a></p>
+
+  <table class="admin-table admin-detail">
+    <tbody>
+      {rows.map(([k, v]) => <tr><th scope="row">{k}</th><td>{v}</td></tr>)}
+    </tbody>
+  </table>
+  <p><a class="admin-button" href={mailto}>Reply by email</a></p>
+
+  <form method="post" class="admin-form">
+    <fieldset>
+      <legend>Follow-up</legend>
+      <div class="admin-row">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {ENQUIRY_STATUSES.map((s) => <option value={s} selected={s === enquiry.status}>{ENQUIRY_STATUS_LABEL[s]}</option>)}
+        </select>
+        <p class="admin-hint">Booked enquiries are kept; the others are deleted 3 years after the last contact.</p>
+      </div>
+      <div class="admin-row">
+        <label for="internal_notes">Team notes</label>
+        <textarea id="internal_notes" name="internal_notes" rows="6" maxlength="5000">{enquiry.internal_notes}</textarea>
+        <p class="admin-hint">Only visible here. Last contact: {when(enquiry.last_contact_at)}.</p>
+      </div>
+    </fieldset>
+    <div class="admin-actions"><button type="submit">Save</button></div>
+  </form>
+
+  <form method="post" class="admin-danger" onsubmit="return confirm('Delete this enquiry permanently? Use this when the guest asks for their data to be erased.')">
+    <input type="hidden" name="action" value="delete" />
+    <button type="submit">Delete this enquiry</button>
+  </form>
+</AdminLayout>

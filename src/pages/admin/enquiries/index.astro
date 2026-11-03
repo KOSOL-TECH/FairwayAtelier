@@ -1,0 +1,50 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import {
+  ENQUIRY_STATUSES, ENQUIRY_STATUS_LABEL, RETENTION_YEARS, countByStatus, listEnquiries, purgeExpired, type EnquiryStatus,
+} from '../../../lib/enquiry/store';
+
+export const prerender = false;
+
+await purgeExpired(env.DB);
+const param = Astro.url.searchParams.get('status');
+const status = ENQUIRY_STATUSES.includes(param as EnquiryStatus) ? (param as EnquiryStatus) : undefined;
+const [counts, enquiries] = await Promise.all([countByStatus(env.DB), listEnquiries(env.DB, status)]);
+const total = Object.values(counts).reduce((a, b) => a + b, 0);
+const saved = Astro.url.searchParams.get('saved');
+const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+---
+<AdminLayout title="Enquiries">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  <p class="admin-intro">
+    {`Every enquiry from the website form, newest first. Enquiries not marked Booked are deleted automatically ${RETENTION_YEARS} years after the last contact (saving a status or note counts as contact).`}
+  </p>
+
+  <nav class="admin-tabs" aria-label="Filter by status">
+    <a href="/admin/enquiries" aria-current={!status ? 'page' : undefined}>All ({total})</a>
+    {ENQUIRY_STATUSES.map((s) => (
+      <a href={`/admin/enquiries?status=${s}`} aria-current={status === s ? 'page' : undefined}>{ENQUIRY_STATUS_LABEL[s]} ({counts[s]})</a>
+    ))}
+  </nav>
+
+  {enquiries.length === 0 ? (
+    <p class="admin-empty">No enquiries{status ? ` marked ${ENQUIRY_STATUS_LABEL[status]}` : ''} yet.</p>
+  ) : (
+    <table class="admin-table">
+      <thead><tr><th>Received (Paris)</th><th>Name</th><th>Dates</th><th>Party</th><th>Tier</th><th>Status</th></tr></thead>
+      <tbody>
+        {enquiries.map((e) => (
+          <tr class={e.status === 'new' ? 'is-new' : undefined}>
+            <td>{when(e.received_at)}</td>
+            <td><a href={`/admin/enquiries/${e.id}`}>{e.name}</a></td>
+            <td>{e.dates}</td>
+            <td>{e.party}</td>
+            <td>{e.tier}</td>
+            <td>{ENQUIRY_STATUS_LABEL[e.status]}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</AdminLayout>

@@ -22,6 +22,7 @@ describe('teamNotification', () => {
     expect(m.subject).toBe('New enquiry: Anne Le Goff (12–19 May)');
     expect(m.text).toContain('Notes: Celebrating <a birthday> & more');
     expect(m.text).toContain('Phone: —');
+    expect(m.text).toContain('In the admin: https://fairwayatelier.com/admin/enquiries/abc-123');
     expect(m.html).toContain('Celebrating &lt;a birthday&gt; &amp; more');
     expect(m.html).not.toContain('<a birthday>');
   });

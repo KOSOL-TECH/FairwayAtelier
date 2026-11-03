@@ -15,6 +15,9 @@ const escapeHtml = (s: string) =>
 /** Strips CR/LF so guest input can never break a header line (subject, name). */
 const oneLine = (s: string) => s.replace(/[\r\n]+/g, ' ').trim();
 
+/** The enquiry in the admin inbox (T-23). */
+const adminLink = (id: string) => `https://fairwayatelier.com/admin/enquiries/${encodeURIComponent(id)}`;
+
 const firstName = (name: string) => oneLine(name).split(' ')[0] || 'and welcome';
 
 export function teamNotification(e: Enquiry): Message {
@@ -31,13 +34,15 @@ export function teamNotification(e: Enquiry): Message {
   ];
   return {
     subject: `New enquiry: ${oneLine(e.name)} (${e.dates})`,
-    text: rows.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\nReply to this email to answer the guest directly.\n',
+    text:
+      rows.map(([k, v]) => `${k}: ${v}`).join('\n') +
+      `\n\nReply to this email to answer the guest directly.\nIn the admin: ${adminLink(e.id)}\n`,
     html:
       '<table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
       rows
         .map(([k, v]) => `<tr><th align="left" valign="top">${k}</th><td style="white-space:pre-wrap">${escapeHtml(v)}</td></tr>`)
         .join('') +
-      '</table><p style="font-family:Arial,sans-serif;font-size:14px">Reply to this email to answer the guest directly.</p>',
+      `</table><p style="font-family:Arial,sans-serif;font-size:14px">Reply to this email to answer the guest directly.<br><a href="${adminLink(e.id)}">Open in the admin</a></p>`,
   };
 }
 

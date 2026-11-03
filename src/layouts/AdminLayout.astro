@@ -13,7 +13,7 @@ const path = Astro.url.pathname;
 const NAV: { label: string; href: string | null }[] = [
   { label: 'Overview', href: '/admin' },
   { label: 'Weeks', href: '/admin/weeks' },
-  { label: 'Enquiries', href: null },
+  { label: 'Enquiries', href: '/admin/enquiries' },
   { label: 'Journal', href: null },
   { label: 'Pages', href: null },
 ];
@@ -109,6 +109,14 @@ const NAV: { label: string; href: string | null }[] = [
   .admin-danger { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-hairline); }
   .admin-main .admin-danger button[type='submit'] { background: none; color: #A0412D !important; border: 1px solid #A0412D; }
   .admin-past { margin-top: 32px; }
+  .admin-tabs { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 16px; font-size: 14px; }
+  .admin-tabs a { text-decoration: none; }
+  .admin-tabs a[aria-current='page'] { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+  .admin-table tr.is-new td { font-weight: 600; }
+  .admin-detail { max-width: 720px; margin-bottom: 16px; }
+  .admin-detail th { width: 180px; }
+  .admin-detail td { white-space: pre-wrap; }
+  .admin-main textarea { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--color-soft-stone); width: 100%; box-sizing: border-box; }
   .admin-past summary { cursor: pointer; font-size: 14px; margin-bottom: 12px; }
   @media (max-width: 620px) {
     .admin-table { display: block; overflow-x: auto; }
