@@ -36,9 +36,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 ## In progress
 
-| ID | Task | Owner | Blocked by | Notes |
-|---|---|---|---|---|
-| T-21 | Admin foundation | Client + Dev | — | Claude Code session 2026-11-03. See `docs/admin.md`. Done: D1 database `fairway-atelier` (binding `DB`, migrations 0001 audit_log and 0002 admin_users applied locally and remote), admin shell at `/admin`, audit log, `/admin` in robots.txt. Sign-in changed 2026-11-03 at the client's request: Cloudflare Access's emailed codes never arrived, so `/admin/login` now uses email + password (PBKDF2 hashes in D1, signed `__Host-` session cookie, 5 attempts/min/IP, `scripts/set-admin-password.mjs`); 11 auth tests; checked end to end locally (wrong password, unknown user, forged cookie, cross-site post, rate limit, sign-out). Remaining: (1) client sets the Worker secret `SESSION_SECRET` (blocked for the agent by the permission check); (2) client sets the atelier@ password with the script; (3) remove the Access application "Fairway Atelier Admin" (team renamed by the client to fairwayatelier.cloudflareaccess.com) so it no longer intercepts `/admin`; (4) client signs in once. |
+_Nothing in progress._
 
 ## Decisions recorded
 
@@ -77,6 +75,7 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 | X-18 | Continuous deploys from GitHub (was T-03) | 2026-11-01 | Cloudflare Workers Builds connected to KOSOL-TECH/FairwayAtelier: every push to `main` runs `npm test && npm run build` then `npx wrangler deploy`; non-production branch builds off. Verified with commit a4bdacf: Workers Builds and GitHub CI both green, deployed as version 6dd92db0, live site checked. |
 | X-19 | Email DNS for sending (was T-17) | 2026-11-01 | `npx wrangler email sending enable fairwayatelier.com` (after the Workers Paid upgrade, D-10). Cloudflare added MX, SPF and DKIM on `cf-bounce.fairwayatelier.com` only, so the apex SPF (Email Routing) and the existing DMARC record are unchanged. The domain was ready about 1 minute later; a Wrangler test send to atelier@ was queued. DMARC follow-up in T-19. |
 | X-20 | Enquiry emails: team notification + guest confirmation (was T-04) | 2026-11-01 | Cloudflare Email Sending (D-01) through the `EMAIL` binding, from atelier@fairwayatelier.com. `src/lib/enquiry/email.ts` + 6 tests; wired in `getEnquirySinks()`. Deployed in commit 1429cf2 (version 9d42d9d2). A live test enquiry (name "Test Enquiry (Claude)", guest address atelier@) returned 200, so the team send was accepted. Both emails confirmed arriving in the valgreskai@gmail.com inbox (client, 2026-11-01). New email copy is listed in D-07 for sign-off. |
+| X-21 | Admin foundation (was T-21) | 2026-11-03 | `/admin` with email + password sign-in (Cloudflare Access was tried first; its emailed codes never arrived, so the client asked for passwords and the Access app was deleted). D1 `fairway-atelier` (migrations 0001 audit_log, 0002 admin_users), PBKDF2 password hashes, HMAC-signed `__Host-` session cookie (`SESSION_SECRET` secret), 5 sign-in attempts/min/IP, `scripts/set-admin-password.mjs`, audit log, admin shell. 11 auth tests; checked locally end to end; client signed in on the live site as atelier@. The Zero Trust org (fairwayatelier.cloudflareaccess.com) still exists but nothing uses it. Design and how-to: `docs/admin.md`. |
 
 ## Closed (not done)
 
