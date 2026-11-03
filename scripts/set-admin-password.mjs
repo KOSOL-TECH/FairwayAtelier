@@ -56,7 +56,8 @@ const file = join(dir, 'set-password.sql');
 writeFileSync(file, sql + ';\n');
 try {
   execSync(`npx wrangler d1 execute DB ${flag === '--local' ? '--local' : '--remote'} --yes --file "${file}"`, {
-    stdio: ['ignore', 'ignore', 'inherit'],
+    // Inherit the terminal: Wrangler only uses the saved `wrangler login` when it runs interactively.
+    stdio: 'inherit',
   });
 } finally {
   rmSync(dir, { recursive: true, force: true });
