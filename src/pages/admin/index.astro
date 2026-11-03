@@ -9,8 +9,8 @@ const changes = await recentChanges(env.DB, 20);
 const when = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
 
-const SECTIONS = [
-  { title: 'Weeks', text: 'Open, limited, sold and waitlist weeks for /availability, Home and the enquiry form.', phase: 'Next' },
+const SECTIONS: { title: string; text: string; href?: string; phase?: string }[] = [
+  { title: 'Weeks', text: 'Open, limited, sold and waitlist weeks for /availability, Home and the enquiry form.', href: '/admin/weeks' },
   { title: 'Enquiries', text: 'Every enquiry from the website, with status and notes. The start of the CRM.', phase: 'Coming soon' },
   { title: 'Journal', text: 'Articles and their images.', phase: 'Coming soon' },
   { title: 'Pages', text: 'Copy and images on every page.', phase: 'Coming soon' },
@@ -20,9 +20,9 @@ const SECTIONS = [
   <div class="admin-cards">
     {SECTIONS.map((s) => (
       <div class="admin-card">
-        <h3>{s.title}</h3>
+        <h3>{s.href ? <a href={s.href}>{s.title}</a> : s.title}</h3>
         <p>{s.text}</p>
-        <p><em>{s.phase}</em></p>
+        {s.phase && <p><em>{s.phase}</em></p>}
       </div>
     ))}
   </div>

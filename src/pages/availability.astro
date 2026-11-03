@@ -1,22 +1,31 @@
 ---
-import { getCollection } from 'astro:content';
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Eyebrow } from '../components/ui/Eyebrow';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { META } from '../lib/site';
+import { upcomingWeeks, yearSpan } from '../lib/weeks';
 
-const [title, description] = META['/availability'];
-const weeks = (await getCollection('availability')).map((w) => w.data).sort((a, b) => a.order - b.order);
+// Rendered on each request from the weeks edited in /admin/weeks.
+export const prerender = false;
+
+const weeks = await upcomingWeeks(env.DB);
+const years = yearSpan(weeks);
+const [title, metaDescription] = META['/availability'];
+const description = metaDescription.replace('Opened weeks for 2026.', years ? `Opened weeks for ${years}.` : 'Opened weeks.');
 const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'waitlist' ? 'Join the waitlist' : 'Enquire about this week';
 ---
 <BaseLayout title={title} description={description}>
   <main id="main" class="sec" style="--max:900px; --pt:72px; --pb:96px">
     <div class="center head">
       <Eyebrow rules tone="brass">Availability</Eyebrow>
-      <h1 class="display-lg">Opened weeks for 2026</h1>
+      <h1 class="display-lg">{years ? `Opened weeks for ${years}` : 'Opened weeks'}</h1>
       <p>Each week runs for a single group of four. Select a week to see tier availability and the tables confirmed so far.</p>
     </div>
+    {weeks.length === 0 && (
+      <p class="center empty">New weeks are being prepared. Enquire and we will hold your preferred dates.</p>
+    )}
     <div class="weeks">
       {weeks.map((w, i) => (
         <details class="week" name="week" open={i === 0}>
@@ -64,6 +73,7 @@ const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'wai
   .week__val { font-family: var(--font-sans); font-size: 14px; color: var(--text-body); }
   .week__cta { grid-column: 1 / -1; margin-top: 8px; }
   .foot { margin-top: 32px; max-width: 700px; }
+  .empty { font-size: 16px; padding: 32px 24px; border: 1px solid var(--border-hairline); background: var(--surface-card); }
   @media (max-width: 960px) {
     .week__detail { grid-template-columns: minmax(0, 1fr); }
   }

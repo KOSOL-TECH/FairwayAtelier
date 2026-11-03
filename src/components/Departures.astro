@@ -1,0 +1,49 @@
+---
+import { env } from 'cloudflare:workers';
+import { Badge } from './ui/Badge';
+import { upcomingWeeks } from '../lib/weeks';
+
+/**
+ * Home "next bookable weeks". Used as a server island (`server:defer`) so Home
+ * stays prerendered while this list follows /admin/weeks on every visit.
+ * With `skeleton`, renders placeholder rows for the island's fallback.
+ */
+interface Props {
+  skeleton?: boolean;
+}
+
+const { skeleton = false } = Astro.props;
+const weeks = skeleton ? [] : (await upcomingWeeks(env.DB)).filter((w) => w.featured);
+---
+{skeleton ? (
+  <ul class="departures" role="list" aria-hidden="true">
+    {[0, 1, 2].map(() => <li class="departures__row departures__row--skeleton"><span class="departures__dates">&nbsp;</span></li>)}
+  </ul>
+) : weeks.length === 0 ? (
+  <p class="departures departures__empty">New weeks are being prepared. Enquire and we will hold your preferred dates.</p>
+) : (
+  <ul class="departures" role="list">
+    {weeks.map((w) => (
+      <li class="departures__row">
+        <span class="departures__dates">{w.dates}</span>
+        <span class="departures__tier">{w.summary}</span>
+        <span><Badge tone={w.status} dot>{w.label}</Badge></span>
+      </li>
+    ))}
+  </ul>
+)}
+
+<style is:global>
+  .departures { list-style: none; margin: 0; padding: 0; background: var(--surface-card); border: 1px solid var(--border-hairline); }
+  .departures__row {
+    display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 20px; align-items: center; padding: 18px 24px;
+  }
+  .departures__row + .departures__row { border-top: 1px solid var(--border-hairline); }
+  .departures__dates { font-family: var(--font-display); font-size: 19px; color: var(--text-heading); }
+  .departures__tier { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.06em; color: var(--text-muted); }
+  .departures__row--skeleton .departures__dates { display: block; width: 55%; background: var(--surface-tint); }
+  .departures__empty { padding: 24px; text-align: center; font-size: 16px; }
+  @media (max-width: 620px) {
+    .departures__row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  }
+</style>

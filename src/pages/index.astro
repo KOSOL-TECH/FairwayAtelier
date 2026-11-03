@@ -1,10 +1,9 @@
 ---
 import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Button } from '../components/ui/Button';
 import { Eyebrow } from '../components/ui/Eyebrow';
-import { Badge } from '../components/ui/Badge';
+import Departures from '../components/Departures.astro';
 import { Divider } from '../components/ui/Divider';
 import { Testimonials } from '../components/islands/Testimonials';
 import { META } from '../lib/site';
@@ -26,10 +25,6 @@ const atmospheres = [
   { slug: 'dining', img: imgDining, title: 'The Table', copy: 'Fine dining and beautiful wines every day, set against sea-side cliffs and breathtaking scenery.' },
   { slug: 'restore', img: imgHeritage, title: 'The Ease', copy: 'Small groups, true luxury, everything taken care of. Touchless — you never see a bill — with a 24/7 concierge.' },
 ];
-const weeks = (await getCollection('availability'))
-  .map((w) => w.data)
-  .filter((w) => w.featured)
-  .sort((a, b) => a.order - b.order);
 const tiers = [
   { eyebrow: 'Standard Tier', name: 'EMERIA Dinard', copy: 'Anchored at EMERIA Dinard Hôtel Thalasso & Spa — the largest thalassotherapy institute on the coast, and the heart of our restorative rhythm.', cta: 'Explore the Standard journey' },
   { eyebrow: 'Signature Tier', name: 'Hôtel Barrière', copy: 'Anchored at Hôtel Barrière Le Grand Hôtel Dinard, a Belle-Époque grand hotel facing the bay of Saint-Malo, member of Leading Hotels of the World.', cta: 'Explore the Signature journey' },
@@ -83,15 +78,9 @@ const trust = [
       <div class="inner">
         <Eyebrow rules tone="brass">Available Departures</Eyebrow>
         <h2 class="display-md center departures__title">The next bookable weeks</h2>
-        <ul class="departures" role="list">
-          {weeks.map((w) => (
-            <li class="departures__row">
-              <span class="departures__dates">{w.dates}</span>
-              <span class="departures__tier">{w.summary}</span>
-              <span><Badge tone={w.status} dot>{w.label}</Badge></span>
-            </li>
-          ))}
-        </ul>
+        <Departures server:defer>
+          <Departures skeleton slot="fallback" />
+        </Departures>
         <div class="center" style="margin-top:28px"><Button href="/availability">See full availability</Button></div>
       </div>
     </section>
@@ -166,13 +155,6 @@ const trust = [
   .atmos:hover .read-more { color: var(--accent-text); }
 
   .departures__title { margin: 14px 0 36px; }
-  .departures { list-style: none; margin: 0; padding: 0; background: var(--surface-card); border: 1px solid var(--border-hairline); }
-  .departures__row {
-    display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 20px; align-items: center; padding: 18px 24px;
-  }
-  .departures__row + .departures__row { border-top: 1px solid var(--border-hairline); }
-  .departures__dates { font-family: var(--font-display); font-size: 19px; color: var(--text-heading); }
-  .departures__tier { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.06em; color: var(--text-muted); }
 
   .tiers__title { margin: 14px 0 44px; }
   .tier { padding: 32px 34px; }
@@ -190,7 +172,6 @@ const trust = [
   @media (max-width: 620px) {
     .hero { padding: 60px 22px 56px; }
     .hero__villa { width: 200px; opacity: 0.32; }
-    .departures__row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
     .tier { padding: 28px 24px; }
   }
 </style>

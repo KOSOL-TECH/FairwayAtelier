@@ -1,0 +1,79 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import { STATUSES, STATUS_LABEL, allWeeks, getWeek, setWeekStatus, todayInParis, type WeekStatus } from '../../../lib/weeks';
+
+export const prerender = false;
+
+// Quick status change from the list.
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const id = Number(form.get('id'));
+  const status = String(form.get('status')) as WeekStatus;
+  const week = Number.isInteger(id) ? await getWeek(env.DB, id) : null;
+  if (week && STATUSES.includes(status) && status !== week.status) {
+    await setWeekStatus(env.DB, id, status);
+    await logChange(env.DB, Astro.locals.adminEmail!, 'update', 'week', week.short, { status: [week.status, status] });
+    return Astro.redirect(`/admin/weeks?saved=${encodeURIComponent(`${week.short} is now ${STATUS_LABEL[status]}.`)}`, 303);
+  }
+  return Astro.redirect('/admin/weeks', 303);
+}
+
+const weeks = await allWeeks(env.DB);
+const today = todayInParis();
+const upcoming = weeks.filter((w) => w.start_date >= today).reverse();
+const past = weeks.filter((w) => w.start_date < today);
+const saved = Astro.url.searchParams.get('saved');
+---
+<AdminLayout title="Weeks">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  <p class="admin-intro">
+    Changes show on the website straight away: <a href="/availability" target="_blank" rel="noopener">Availability</a>,
+    the Home page list (weeks marked “Home”) and the enquiry form’s dates. Weeks leave the site once their first day has passed.
+  </p>
+  <p><a class="admin-button" href="/admin/weeks/new">Add a week</a></p>
+
+  <h2>Upcoming</h2>
+  {upcoming.length === 0 ? (
+    <p class="admin-empty">No upcoming weeks. The site shows “New weeks are being prepared” until you add one.</p>
+  ) : (
+    <table class="admin-table">
+      <thead><tr><th>Week</th><th>Status</th><th>Home</th><th>Website</th><th></th></tr></thead>
+      <tbody>
+        {upcoming.map((w) => (
+          <tr>
+            <td>{w.dates}</td>
+            <td>
+              <form method="post" class="admin-inline">
+                <input type="hidden" name="id" value={w.id} />
+                <label class="sr-only" for={`status-${w.id}`}>Status for {w.short}</label>
+                <select id={`status-${w.id}`} name="status">
+                  {STATUSES.map((s) => <option value={s} selected={s === w.status}>{STATUS_LABEL[s]}</option>)}
+                </select>
+                <button type="submit">Save</button>
+              </form>
+            </td>
+            <td>{w.featured ? 'Yes' : '—'}</td>
+            <td>{w.published ? 'Shown' : 'Draft'}</td>
+            <td><a href={`/admin/weeks/${w.id}`}>Edit</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+
+  {past.length > 0 && (
+    <details class="admin-past">
+      <summary>Past weeks ({past.length})</summary>
+      <table class="admin-table">
+        <thead><tr><th>Week</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {past.map((w) => (
+            <tr><td>{w.dates}</td><td>{w.label}</td><td><a href={`/admin/weeks/${w.id}`}>Edit</a></td></tr>
+          ))}
+        </tbody>
+      </table>
+    </details>
+  )}
+</AdminLayout>

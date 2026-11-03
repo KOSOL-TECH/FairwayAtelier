@@ -20,7 +20,7 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 - **Media:** Cloudflare R2, binding `MEDIA`. Uploads are served from `/media/<key>`, with long cache headers. Resizing for responsive images is open (D-12).
 - **Sign-in:** email and password at `/admin/login` (client request 2026-11-03, replacing Cloudflare Access, whose emailed codes did not arrive). Passwords are stored only as PBKDF2-SHA256 hashes (100,000 iterations, per-user salt) in `admin_users`. A successful sign-in sets a `__Host-` session cookie (HttpOnly, Secure, SameSite=Strict, 12 hours) signed with HMAC using the `SESSION_SECRET` Worker secret. Attempts are rate-limited to 5 per minute per IP (`LOGIN_LIMITER`). Unknown emails take as long to check as known ones. Astro's origin check refuses cross-site form posts. The signed-in email is recorded on every change (`audit_log` table).
 - **Admin UI:** Astro pages under `src/pages/admin/` with React islands, rendered on demand, `noindex`, and left out of the sitemap and `robots.txt`. It reuses the site's tokens and fonts.
-- **Public pages:** pages that show managed content switch from build-time prerendering to on-demand rendering from D1, with an edge cache that is purged when an editor saves. Static pages with no managed content stay prerendered.
+- **Public pages:** pages that show managed content render on each request from D1 (`/availability`, `/enquire`). A page that also has build-time optimised images keeps them by staying prerendered and loading the managed part as a server island (Home's week list). There is no edge cache yet: D1 reads take a few milliseconds, and edits go live at once without purging anything. Static pages with no managed content stay prerendered.
 - **Enquiries:** a new `D1Sink` in `getEnquirySinks()` stores each enquiry before the emails go out. The inbox lists enquiries with a status (new / replied / closed) and notes. This becomes the CRM's base.
 
 ## Working on the admin
@@ -33,7 +33,7 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 
 ## Data model (first version)
 
-- `weeks`: id, start date, long and short labels, status, status label, Home summary, standard and signature text, dining note, featured flag, sort order, published flag.
+- `weeks` (migration 0003): id, start and end date (unique start), status, Home summary, standard and signature text, dining note, featured flag, published flag. The long and short date labels and the status label are derived in `src/lib/weeks.ts`, so the enquiry option text can never drift from the dates.
 - `articles`: slug, order, eyebrow, kicker, title, hero media id, lede, Markdown body, next slug and label, published flag.
 - `page_blocks`: page, block key, value (text or media id). Every editable piece of copy on a page has a stable key. Seeded with today's approved copy.
 - `media`: R2 key, file name, type, size, alt text, upload details.

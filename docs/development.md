@@ -22,7 +22,7 @@ npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangl
 | `src/layouts/BaseLayout.astro` | `<head>` (title, meta, canonical, OG/Twitter, JSON-LD), header, footer, consent |
 | `src/components/ui/` | Design-system components (same props as `prototype/components`) |
 | `src/components/islands/` | React islands: `CookieConsent`, `EnquiryForm`, `JourneyTiers`, `Testimonials` |
-| `src/content/availability.json` | Opened weeks: feeds `/availability`, the Home preview and the enquiry date options |
+| `src/lib/weeks.ts` | Opened weeks, stored in D1 and edited at `/admin/weeks`: feeds `/availability`, the Home preview and the enquiry date options |
 | `src/content/journal/*.md` | The three journal articles |
 | `src/styles/` | Tokens (copied from the prototype), fonts, base, layout primitives, component CSS |
 | `src/lib/site.ts` | Per-route META, nav, sitemap entries, TravelAgency JSON-LD, Atout France number |
@@ -33,7 +33,7 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 
 ## Editing content
 
-- **Availability:** edit `src/content/availability.json`. `status` is one of `booking | limited | sold | waitlist`. Weeks with `featured: true` appear on Home. Every week that is not `sold` becomes an option in the enquiry form (server validation uses the same list).
+- **Availability:** in the admin at `/admin/weeks`; changes are live at once. `/availability` and `/enquire` render on each request, and the Home list is a server island (`src/components/Departures.astro`, `server:defer`), so Home itself stays prerendered. Only published weeks whose first day has not passed (Paris time) are shown. Weeks marked for Home appear there. Every shown week that is not `sold` becomes an option in the enquiry form, and the server validates against the same list.
 - **Articles:** edit `src/content/journal/<slug>.md`. A `>` blockquote in the body renders as the pull quote.
 
 ## Admin

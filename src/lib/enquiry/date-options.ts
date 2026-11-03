@@ -1,11 +1,9 @@
-import { getCollection } from 'astro:content';
+import { env } from 'cloudflare:workers';
+import { upcomingWeeks } from '../weeks';
 import { FLEXIBLE } from './validate';
 
-/** "Dates of Interest" options: every opened week that is not sold out, then "Flexible". */
-export async function getDateOptions(): Promise<string[]> {
-  const weeks = (await getCollection('availability'))
-    .map((w) => w.data)
-    .filter((w) => w.status !== 'sold')
-    .sort((a, b) => a.order - b.order);
+/** "Dates of Interest" options: every upcoming published week that is not sold out, then "Flexible". */
+export async function getDateOptions(db: D1Database = env.DB): Promise<string[]> {
+  const weeks = (await upcomingWeeks(db)).filter((w) => w.status !== 'sold');
   return [...weeks.map((w) => w.short), FLEXIBLE];
 }

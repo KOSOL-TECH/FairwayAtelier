@@ -1,0 +1,148 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import {
+  STATUSES, STATUS_LABEL, createWeek, deleteWeek, getWeek, parseWeekForm, shortDates, updateWeek, validateWeek,
+  type WeekErrors, type WeekInput,
+} from '../../../lib/weeks';
+
+export const prerender = false;
+
+/** /admin/weeks/new adds a week; /admin/weeks/<id> edits one. */
+const isNew = Astro.params.id === 'new';
+const id = Number(Astro.params.id);
+const existing = isNew ? null : Number.isInteger(id) ? await getWeek(env.DB, id) : null;
+if (!isNew && !existing) return Astro.redirect('/admin/weeks', 303);
+
+const email = Astro.locals.adminEmail!;
+const back = (msg: string) => Astro.redirect(`/admin/weeks?saved=${encodeURIComponent(msg)}`, 303);
+
+let week: WeekInput = existing
+  ? { ...existing, featured: !!existing.featured, published: !!existing.published }
+  : { start_date: '', end_date: '', status: 'booking', summary: 'Standard & Signature', standard: 'Available', signature: 'Available', dining: '', featured: true, published: true };
+let errors: WeekErrors = {};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('action') === 'delete' && existing) {
+    await deleteWeek(env.DB, existing.id);
+    await logChange(env.DB, email, 'delete', 'week', existing.short);
+    return back(`${existing.short} was deleted.`);
+  }
+
+  week = parseWeekForm(form);
+  errors = validateWeek(week);
+  if (Object.keys(errors).length === 0) {
+    const label = shortDates(week.start_date, week.end_date);
+    if (existing) {
+      if (await updateWeek(env.DB, existing.id, week)) {
+        const changed = Object.fromEntries(
+          (Object.keys(week) as (keyof WeekInput)[])
+            .filter((k) => String(week[k]) !== String(k === 'featured' || k === 'published' ? !!existing[k] : existing[k]))
+            .map((k) => [k, [existing[k], week[k]]]),
+        );
+        await logChange(env.DB, email, 'update', 'week', label, changed);
+        return back(`${label} was saved.`);
+      }
+    } else if ((await createWeek(env.DB, week)) !== null) {
+      await logChange(env.DB, email, 'create', 'week', label);
+      return back(`${label} was added.`);
+    }
+    errors.start_date = 'Another week already starts on this day.';
+  }
+  Astro.response.status = 422;
+}
+
+const field = (name: keyof WeekInput) => ({ name, id: name, 'aria-invalid': errors[name] ? ('true' as const) : undefined, 'aria-describedby': errors[name] ? `${name}-error` : undefined });
+const title = isNew ? 'Add a week' : `Edit ${existing!.short}`;
+---
+<AdminLayout title={title}>
+  <p><a href="/admin/weeks">← All weeks</a></p>
+  {Object.keys(errors).length > 0 && <p class="admin-error" role="alert">Please check the highlighted fields.</p>}
+
+  <form method="post" class="admin-form" novalidate>
+    <fieldset>
+      <legend>Dates</legend>
+      <div class="admin-row">
+        <label for="start_date">First day</label>
+        <input type="date" {...field('start_date')} value={week.start_date} required />
+        {errors.start_date && <p class="admin-field-error" id="start_date-error">{errors.start_date}</p>}
+      </div>
+      <div class="admin-row">
+        <label for="end_date">Last day</label>
+        <input type="date" {...field('end_date')} value={week.end_date} required />
+        {errors.end_date && <p class="admin-field-error" id="end_date-error">{errors.end_date}</p>}
+        <p class="admin-hint">Shown on the site as, for example, “Sun 09 – Sun 16 May 2027”.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Availability</legend>
+      <div class="admin-row">
+        <label for="status">Status</label>
+        <select {...field('status')}>
+          {STATUSES.map((s) => <option value={s} selected={s === week.status}>{STATUS_LABEL[s]}</option>)}
+        </select>
+        {errors.status && <p class="admin-field-error" id="status-error">{errors.status}</p>}
+        <p class="admin-hint">Booking: open. Limited: few places left. Sold: full (hidden from the enquiry form). Waitlist: full, taking a waitlist.</p>
+      </div>
+      <div class="admin-row">
+        <label for="standard">Standard — EMERIA</label>
+        <input type="text" {...field('standard')} value={week.standard} maxlength="200" required />
+        {errors.standard && <p class="admin-field-error" id="standard-error">{errors.standard}</p>}
+      </div>
+      <div class="admin-row">
+        <label for="signature">Signature — Barrière</label>
+        <input type="text" {...field('signature')} value={week.signature} maxlength="200" required />
+        {errors.signature && <p class="admin-field-error" id="signature-error">{errors.signature}</p>}
+      </div>
+      <div class="admin-row">
+        <label for="dining">Headline tables</label>
+        <input type="text" {...field('dining')} value={week.dining} maxlength="200" required placeholder="e.g. Le Coquillage, Le Jules Verne confirmed" />
+        {errors.dining && <p class="admin-field-error" id="dining-error">{errors.dining}</p>}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Where it shows</legend>
+      <div class="admin-row">
+        <label class="admin-check"><input type="checkbox" name="published" checked={week.published} /> Show on the website</label>
+        <p class="admin-hint">Untick to keep it as a draft.</p>
+      </div>
+      <div class="admin-row">
+        <label class="admin-check"><input type="checkbox" name="featured" checked={week.featured} /> Show on the Home page</label>
+      </div>
+      <div class="admin-row">
+        <label for="summary">Home page summary</label>
+        <input type="text" {...field('summary')} value={week.summary} maxlength="200" required />
+        {errors.summary && <p class="admin-field-error" id="summary-error">{errors.summary}</p>}
+        <p class="admin-hint">The short tier note in the Home list, e.g. “Standard & Signature” or “Signature only”.</p>
+      </div>
+    </fieldset>
+
+    <div class="admin-actions">
+      <button type="submit" class="admin-button">{isNew ? 'Add week' : 'Save changes'}</button>
+      <a href="/admin/weeks">Cancel</a>
+    </div>
+  </form>
+
+  {existing && (
+    <form method="post" class="admin-danger" onsubmit="return confirm('Delete this week? This cannot be undone.')">
+      <input type="hidden" name="action" value="delete" />
+      <button type="submit">Delete this week</button>
+    </form>
+  )}
+
+  <script is:inline>
+    // Suggest a 7-night week: fill the last day when the first day is picked and the last day is empty.
+    const start = document.getElementById('start_date');
+    const end = document.getElementById('end_date');
+    start?.addEventListener('change', () => {
+      if (!start.value || end.value) return;
+      const d = new Date(start.value + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + 7);
+      end.value = d.toISOString().slice(0, 10);
+    });
+  </script>
+</AdminLayout>

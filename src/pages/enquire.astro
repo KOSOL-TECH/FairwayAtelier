@@ -5,6 +5,9 @@ import { EnquiryForm } from '../components/islands/EnquiryForm';
 import { getDateOptions } from '../lib/enquiry/date-options';
 import { META } from '../lib/site';
 
+// Rendered on each request so the date options follow /admin/weeks.
+export const prerender = false;
+
 const [title, description] = META['/enquire'];
 const dateOptions = await getDateOptions();
 ---
