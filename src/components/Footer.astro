@@ -1,7 +1,6 @@
 ---
 import { env } from 'cloudflare:workers';
-import { Image } from 'astro:assets';
-import crest from '../assets/crest.png';
+import crest from '../assets/crest.svg';
 import { CONTACT_EMAIL, FOOTER_JOURNEY, FOOTER_LEGAL, FOOTER_PLAN } from '../lib/site';
 import { loadPage } from '../lib/copy';
 import footer from '../lib/pages/footer';
@@ -14,7 +13,7 @@ const legal = ([1, 2, 3, 4] as const).map((n, i) => [c.t[`legal${n}Label` as con
   <div class="site-footer__grid">
     <div>
       <div class="site-footer__crest">
-        <Image src={crest} alt="" height={60} densities={[1, 2]} />
+        <img src={crest.src} alt="" width="59" height="60" />
       </div>
       <div class="site-footer__tagline">{c.t.tagline}</div>
     </div>

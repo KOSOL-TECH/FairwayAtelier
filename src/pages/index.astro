@@ -1,6 +1,5 @@
 ---
 import { env } from 'cloudflare:workers';
-import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Button } from '../components/ui/Button';
 import { Eyebrow } from '../components/ui/Eyebrow';
@@ -10,8 +9,10 @@ import { Testimonials } from '../components/islands/Testimonials';
 import MediaImage from '../components/MediaImage.astro';
 import { loadPage } from '../lib/copy';
 import page from '../lib/pages/home';
-import heroVilla from '../assets/hero-villa.png';
-import crest from '../assets/crest.png';
+// Vector brand art (crisp at any size): crest and the villa sketch, each with a Fairway Atelier signature.
+import crest from '../assets/crest.svg';
+import villaRight from '../assets/villa-right.svg';
+import villaLeft from '../assets/villa-left.svg';
 
 // Rendered on each request so edits in /admin/pages show at once.
 export const prerender = false;
@@ -41,10 +42,10 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
   ogDescription={c.t.ogDescription}>
   <main id="main">
     <section class="hero">
-      <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--right" width={420} densities={[1]} loading="eager" />
-      <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--left" width={420} densities={[1]} loading="eager" />
+      <img src={villaRight.src} alt="" aria-hidden="true" class="hero__villa hero__villa--right" width="420" height="380" />
+      <img src={villaLeft.src} alt="" aria-hidden="true" class="hero__villa hero__villa--left" width="420" height="380" />
       <div class="hero__content">
-        <Image src={crest} alt="" height={104} densities={[1, 2]} loading="eager" class="hero__crest" />
+        <img src={crest.src} alt="" width="103" height="104" class="hero__crest" />
         <h1 class="display-xl">{c.t.heroTitle}</h1>
         <p class="hero__lead">{c.t.heroLead}</p>
         <div class="hero__ctas">
@@ -139,7 +140,11 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
     mask-image: linear-gradient(to left, #000 40%, transparent);
   }
   .hero__villa--right { right: 0; }
-  .hero__villa--left { left: 0; transform: scaleX(-1); }
+  .hero__villa--left {
+    left: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 40%, transparent);
+    mask-image: linear-gradient(to right, #000 40%, transparent);
+  }
   .hero__content { position: relative; z-index: 1; }
   .hero__crest { height: 104px; width: auto; }
   .hero h1 { margin: 26px auto 0; max-width: 800px; }
