@@ -18,6 +18,11 @@ describe('renderMarkdown', () => {
   });
 });
 
+it('leaves bare email and web addresses as plain text', () => {
+  const html = renderMarkdown('Write to atelier@fairwayatelier.com or see www.cnil.fr, or [the CNIL](https://www.cnil.fr).');
+  expect(html.trim()).toBe('<p>Write to atelier@fairwayatelier.com or see www.cnil.fr, or <a href="https://www.cnil.fr">the CNIL</a>.</p>');
+});
+
 describe('readTime', () => {
   it('rounds to minutes at about 200 words a minute, minimum 1', () => {
     expect(readTime({ lede: '', body: 'word '.repeat(1000) })).toBe('5 min');

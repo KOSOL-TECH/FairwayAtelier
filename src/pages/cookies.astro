@@ -1,16 +1,22 @@
 ---
+import { env } from 'cloudflare:workers';
 import LegalLayout from '../layouts/LegalLayout.astro';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/cookies';
 
-const [title, description] = META['/cookies'];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const sections = ([1, 2, 3] as const).map((n) => [c.t[`section${n}Title` as const], c.md(`section${n}Body` as const)]);
 ---
-<LegalLayout title={title} description={description} heading="Cookie policy" updated="July 2026"
-  placeholder="Draft for review before launch. Cookie table to be completed once analytics vendor is finalised.">
-  <p>This site uses a minimal set of cookies. In line with CNIL guidance, non-essential cookies are set only with your consent, and refusing is as easy as accepting. You can change your choice at any time using the banner, which reappears when you clear your saved preference.</p>
-  <h2>Strictly necessary</h2>
-  <p>Required for the site to function and to remember your cookie choice. These are always active and cannot be switched off. They store no marketing or profiling data.</p>
-  <h2>Analytics (optional, off by default)</h2>
-  <p>With your consent, we use a privacy-respecting analytics tool (Plausible, Fathom, or Matomo) that measures aggregate, anonymous usage. It sets no advertising cookies and does not track you across other websites. We do not use Google Analytics.</p>
-  <h2>Managing your choice</h2>
-  <p>Use "Manage preferences" in the cookie banner to accept or refuse analytics individually. Refusing has no effect on your ability to use the site or to enquire. To reset your choice, clear this site's stored data in your browser.</p>
+<LegalLayout title={c.t.metaTitle} description={c.t.metaDescription} heading={c.t.heading} updated={c.t.updated}
+  placeholder={c.t.placeholder}>
+  <Fragment set:html={c.md('intro')} />
+  {sections.map(([heading, body]) => (
+    <>
+      <h2>{heading}</h2>
+      <Fragment set:html={body} />
+    </>
+  ))}
 </LegalLayout>

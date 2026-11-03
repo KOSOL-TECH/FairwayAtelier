@@ -1,22 +1,24 @@
 ---
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Eyebrow } from '../components/ui/Eyebrow';
 import { EnquiryForm } from '../components/islands/EnquiryForm';
 import { getDateOptions } from '../lib/enquiry/date-options';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/enquire';
 
-// Rendered on each request so the date options follow /admin/weeks.
+// Rendered on each request so the date options follow /admin/weeks and edits in /admin/pages show at once.
 export const prerender = false;
 
-const [title, description] = META['/enquire'];
+const c = await loadPage(env.DB, page);
 const dateOptions = await getDateOptions();
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}>
   <main id="main" class="sec" style="--max:720px; --pt:72px; --pb:96px">
     <div class="center head">
-      <Eyebrow rules tone="brass">Enquire</Eyebrow>
-      <h1 class="display-lg">Enquire about a private journey</h1>
-      <p>Tell us a little, and a member of our France-based team will reply within 24 hours to arrange a 30–45 minute consultation call.</p>
+      <Eyebrow rules tone="brass">{c.t.heroEyebrow}</Eyebrow>
+      <h1 class="display-lg">{c.t.heroTitle}</h1>
+      <p>{c.t.heroIntro}</p>
     </div>
     <div class="frame enquiry-frame">
       <div class="frame__inner enquiry-frame__inner">

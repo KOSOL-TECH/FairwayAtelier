@@ -5,6 +5,7 @@ import { logChange } from '../../lib/admin/audit';
 import {
   ACCEPTED_TYPES, MAX_UPLOAD_BYTES, deleteMedia, getMedia, insertMedia, listMedia, mediaUrl, mediaUsage, updateAlt,
 } from '../../lib/media';
+import { PAGES } from '../../lib/pages';
 
 export const prerender = false;
 
@@ -47,7 +48,7 @@ if (Astro.request.method === 'POST') {
       return back(`Description saved for ${media.filename}.`);
     }
     if (media && action === 'delete') {
-      const usage = await mediaUsage(env.DB, media.id);
+      const usage = await mediaUsage(env.DB, media.id, PAGES);
       if (usage.length) error = `${media.filename} is still used (${usage.join('; ')}). Choose another image there first.`;
       else {
         await deleteMedia(env.DB, env.MEDIA, media);

@@ -19,6 +19,7 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 - **Data:** Cloudflare D1 (SQLite), binding `DB`. Schema changes are numbered SQL files in `migrations/`, applied with `npx wrangler d1 migrations apply`.
 - **Media:** Cloudflare R2 bucket `fairway-atelier-media`, binding `MEDIA`, described in the D1 `media` table. Served from `/media/<id>?w=<width>`: the Images binding (`IMAGES`) resizes to one of six allowed widths and converts to AVIF or WebP, and the result is cached at the edge forever (a file's bytes never change; a new upload gets a new id). Uploads are checked by reading their real dimensions, so non-images are refused. A file in use by an article or page cannot be deleted.
 - **Sign-in:** email and password at `/admin/login` (client request 2026-11-03, replacing Cloudflare Access, whose emailed codes did not arrive). Passwords are stored only as PBKDF2-SHA256 hashes (100,000 iterations, per-user salt) in `admin_users`. A successful sign-in sets a `__Host-` session cookie (HttpOnly, Secure, SameSite=Strict, 12 hours) signed with HMAC using the `SESSION_SECRET` Worker secret. Attempts are rate-limited to 5 per minute per IP (`LOGIN_LIMITER`). Unknown emails take as long to check as known ones. Astro's origin check refuses cross-site form posts. The signed-in email is recorded on every change (`audit_log` table).
+- **Page copy (T-25):** every page's editable text and content images are declared once in `src/lib/pages/<page>.ts` (`definePage`, `src/lib/copy.ts`), with the approved copy as each block's default. D1 `page_blocks` stores only edited blocks; saving a value equal to the original deletes its row, so an unedited page renders exactly as approved and "restore" is pasting the original back (the admin shows it under every edited field). Pages call `loadPage(env.DB, page)` and render `c.t.<key>`, `c.md(<key>)` (legal pages, Markdown) or `c.img(<key>)` with `MediaImage`. All pages now render on demand; Astro's `<Image>` for brand graphics resizes through the Images binding at runtime (`imageService: { build: 'compile', runtime: 'cloudflare-binding' }`). Lists have a fixed number of items (numbered blocks): adding a FAQ question or a day is a code change.
 - **Admin UI:** Astro pages under `src/pages/admin/` with React islands, rendered on demand, `noindex`, and left out of the sitemap and `robots.txt`. It reuses the site's tokens and fonts.
 - **Public pages:** pages that show managed content render on each request from D1 (`/availability`, `/enquire`). A page that also has build-time optimised images keeps them by staying prerendered and loading the managed part as a server island (Home's week list). There is no edge cache yet: D1 reads take a few milliseconds, and edits go live at once without purging anything. Static pages with no managed content stay prerendered.
 - **Enquiries:** a new `D1Sink` in `getEnquirySinks()` stores each enquiry before the emails go out. The inbox lists enquiries with a status (new / replied / closed) and notes. This becomes the CRM's base.
@@ -31,11 +32,19 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 - **Locally:** run `npx wrangler d1 migrations apply DB --local` once, then `npm run dev` and open `/admin`; dev mode signs you in as `dev@localhost`. To test the real login, put `SESSION_SECRET=<random>` in `.dev.vars`, create a local user with the script and `--local`, and use `npm run preview`.
 - **Schema changes:** add `migrations/000N_name.sql`, apply it locally, then run `npx wrangler d1 migrations apply DB --remote` before pushing code that needs it. Workers Builds does not apply migrations.
 
+## Adding an editable page or field
+
+1. Add the block to the page's registry in `src/lib/pages/<page>.ts` with the current text as `default`.
+2. Render it in the page with `c.t.<key>` (or `c.md` / `c.img`).
+3. A new page also needs `export const prerender = false;`, a registry file, and an entry in `PAGES` (`src/lib/pages/index.ts`).
+
+Never rename a page `id` or block key once live: stored edits are keyed by them (an orphaned edit is simply ignored).
+
 ## Data model (first version)
 
 - `weeks` (migration 0003): id, start and end date (unique start), status, Home summary, standard and signature text, dining note, featured flag, published flag. The long and short date labels and the status label are derived in `src/lib/weeks.ts`, so the enquiry option text can never drift from the dates.
 - `articles`: slug, order, eyebrow, kicker, title, hero media id, lede, Markdown body, next slug and label, published flag.
-- `page_blocks`: page, block key, value (text or media id). Every editable piece of copy on a page has a stable key. Seeded with today's approved copy.
+- `page_blocks` (migration 0006): page id, block key, kind, value (text, Markdown or media id), who and when. Only edited blocks are stored; defaults live in code.
 - `media`: R2 key, file name, type, size, alt text, upload details.
 - `enquiries`: the enquiry fields, received time, status, notes.
 - `audit_log`: who, when, what changed.

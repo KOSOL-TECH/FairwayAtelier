@@ -1,42 +1,37 @@
 ---
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import VenueSection from '../components/VenueSection.astro';
 import Disclosure from '../components/Disclosure.astro';
 import { Button } from '../components/ui/Button';
-import { META } from '../lib/site';
-import imgHeritage from '../assets/img-club-heritage.png';
-import imgDestination from '../assets/img-destination.png';
-import imgGolfBag from '../assets/img-golf-bag.png';
-import imgDining from '../assets/img-dining.png';
-import imgCrest from '../assets/img-embossed-crest.png';
-import imgArch from '../assets/img-arch-lineart.png';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/dining-and-golf';
 
-const [title, description] = META['/dining-and-golf'];
-const courses = [
-  { img: imgHeritage, name: 'Golf de Dinard', meta: 'Saint-Briac-sur-Mer · Est. 1887', copy: 'The second-oldest course in France — a classic seaside links laid over the cliffs of the Emerald Coast, minutes from both hotels.' },
-  { img: imgDestination, name: 'Golf de Saint-Cast', meta: 'Côte d\'Émeraude · Parkland-links', copy: 'A rolling coastal course with wide Atlantic views, chosen for its condition and light on the week\'s calmer day.' },
-  { img: imgGolfBag, name: 'Golf de Pléneuf-Val-André', meta: 'Baie de Saint-Brieuc · Cliff-top', copy: 'Dramatic cliff-edge fairways above the bay — the most photographed round of the journey, and a favourite finish.' },
-];
-const tables = [
-  { img: imgDining, name: 'Le Coquillage', meta: 'Saint-Méloir-des-Ondes · ★★★', copy: 'Hubert & Olivier Roellinger\'s three-star at Château Richeux — sea, garden, and spice, and the headline dinner of the week.' },
-  { img: imgCrest, name: 'Le Jules Verne', meta: 'Paris · Eiffel Tower · ★★', copy: 'Lunch two-thirds up the tower before the TGV south — a two-star opening that sets the register for the days to come.' },
-  { img: imgArch, name: 'Pourquoi Pas — Castelbrac', meta: 'Dinard · ★', copy: 'A one-star dining room set into the rock above the bay, held for an intimate closing night rather than another long tasting.' },
-];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const courses = ([1, 2, 3] as const).map((n) => ({
+  img: c.img(`course${n}Image`), name: c.t[`course${n}Name` as const], meta: c.t[`course${n}Meta` as const], copy: c.t[`course${n}Copy` as const],
+}));
+const tables = ([1, 2, 3] as const).map((n) => ({
+  img: c.img(`table${n}Image`), name: c.t[`table${n}Name` as const], meta: c.t[`table${n}Meta` as const], copy: c.t[`table${n}Copy` as const],
+}));
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}>
   <main id="main">
-    <PageHero eyebrow="Dining & Golf" title="Championship links, three-star tables"
-      intro="Four rounds of coastal golf and a run of France's most storied restaurants — sequenced across the week so each is met with an appetite, never fatigue." />
-    <VenueSection label="The Courses" title="Four rounds on the Emerald Coast" items={courses}
-      lead="Played with your own English-speaking PGA professional. The precise courses are chosen for each week's weather, light, and the group's rhythm." />
+    <PageHero eyebrow={c.t.heroEyebrow} title={c.t.heroTitle}
+      intro={c.t.heroIntro} />
+    <VenueSection label={c.t.coursesLabel} title={c.t.coursesTitle} items={courses}
+      lead={c.t.coursesLead} />
     <div class="band--tint tables">
-      <VenueSection label="The Tables" title="Two unmistakable Michelin moments" items={tables}
-        lead="Reservations at named tables are confirmed before a week is ever offered — Le Coquillage and Le Jules Verne are held in advance." />
+      <VenueSection label={c.t.tablesLabel} title={c.t.tablesTitle} items={tables}
+        lead={c.t.tablesLead} />
     </div>
     <section class="sec center" style="--pt:72px; --pb:40px">
       <Disclosure />
-      <div style="margin-top:28px"><Button href="/enquire">Enquire about a journey</Button></div>
+      <div style="margin-top:28px"><Button href="/enquire">{c.t.ctaButton}</Button></div>
     </section>
   </main>
 </BaseLayout>

@@ -31,9 +31,16 @@ export interface Article extends ArticleRow {
   read_time: string;
 }
 
-/** Markdown renderer for article bodies. Raw HTML is shown as text, never run. */
+/**
+ * Markdown renderer for article bodies and legal pages. Raw HTML is shown as
+ * text, never run. Bare email and web addresses stay plain text (no automatic
+ * links); write [text](https://…) for a link.
+ */
 const md = new Marked({ gfm: true, breaks: false });
 md.use({
+  tokenizer: {
+    url: () => undefined,
+  },
   renderer: {
     html: ({ text }) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
   },

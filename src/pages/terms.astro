@@ -1,22 +1,22 @@
 ---
+import { env } from 'cloudflare:workers';
 import LegalLayout from '../layouts/LegalLayout.astro';
-import { ATOUT_FRANCE, META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/terms';
 
-const [title, description] = META['/terms'];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const sections = ([1, 2, 3, 4, 5, 6] as const).map((n) => [c.t[`section${n}Title` as const], c.md(`section${n}Body` as const)]);
 ---
-<LegalLayout title={title} description={description} heading="Terms of booking — CGV" updated="July 2026"
-  placeholder="Conditions Générales de Vente — draft for review by French travel-law counsel before launch.">
-  <p>These conditions govern the sale of travel services by Fairway Atelier SAS (Atout France {ATOUT_FRANCE}) and apply in addition to Articles L.211-1 et seq. of the French Code du tourisme.</p>
-  <h2>Enquiry and consultation</h2>
-  <p>No sum is collected through this website. A journey is arranged only after a consultation call and the issue of a written, personalised proposal. A contract is formed when you accept that proposal in writing and pay the agreed deposit.</p>
-  <h2>Pricing</h2>
-  <p>All journeys are bespoke and priced on request; the price confirmed in your proposal prevails. Flights are not included and, where arranged at your request, are billed separately at cost plus a stated handling fee.</p>
-  <h2>Payment schedule</h2>
-  <p>[Deposit %] on confirmation; the balance due [XX] days before departure. Payment terms are set out in full in your individual proposal.</p>
-  <h2>Changes and cancellation</h2>
-  <p>Cancellation terms follow the schedule in your proposal and the Code du tourisme. Because named restaurants, hotels, and courses are held on your behalf, cancellation charges reflect commitments already made to our partners.</p>
-  <h2>Named inclusions</h2>
-  <p>Named restaurants, hotels, and courses are illustrative of the experience we curate. Final inclusions are confirmed during your consultation and in your written proposal, and remain subject to availability.</p>
-  <h2>Liability and guarantee</h2>
-  <p>We hold the financial guarantee and professional liability insurance required of a French travel operator. Full details appear in the <a href="/mentions-legales">Mentions légales</a>.</p>
+<LegalLayout title={c.t.metaTitle} description={c.t.metaDescription} heading={c.t.heading} updated={c.t.updated}
+  placeholder={c.t.placeholder}>
+  <Fragment set:html={c.md('intro')} />
+  {sections.map(([heading, body]) => (
+    <>
+      <h2>{heading}</h2>
+      <Fragment set:html={body} />
+    </>
+  ))}
 </LegalLayout>

@@ -4,6 +4,8 @@
  * binding (src/pages/media/[id].ts). A file's id never changes and its bytes
  * are never replaced, so responses can be cached forever.
  */
+import type { PageDef } from './copy';
+
 export interface Media {
   id: string;
   r2_key: string;
@@ -70,15 +72,23 @@ export async function updateAlt(db: D1Database, id: string, alt: string) {
   await db.prepare('UPDATE media SET alt = ? WHERE id = ?').bind(alt, id).run();
 }
 
-/** Where a file is used; it can only be deleted when this is empty. */
-export async function mediaUsage(db: D1Database, id: string): Promise<string[]> {
+/**
+ * Where a file is used; it can only be deleted when this is empty. Page images
+ * count whether they are an editor's choice (page_blocks) or a block's
+ * original, since an unedited page shows the original.
+ */
+export async function mediaUsage(db: D1Database, id: string, pages: PageDef[]): Promise<string[]> {
   const { results } = await db.prepare('SELECT title FROM articles WHERE hero_media_id = ?').bind(id).all<{ title: string }>();
-  const blocks = await db
-    .prepare("SELECT page || ' · ' || block AS label FROM page_blocks WHERE kind = 'image' AND value = ?")
-    .bind(id)
-    .all<{ label: string }>()
-    .catch(() => ({ results: [] as { label: string }[] })); // page_blocks arrives with T-25
-  return [...results.map((r) => `Journal: ${r.title}`), ...blocks.results.map((r) => `Page: ${r.label}`)];
+  const { results: edits } = await db
+    .prepare("SELECT page, block, value FROM page_blocks WHERE kind = 'image'")
+    .all<{ page: string; block: string; value: string }>();
+  const edited = new Map(edits.map((e) => [`${e.page}.${e.block}`, e.value]));
+  const pageUses = pages.flatMap((p) =>
+    Object.entries(p.blocks)
+      .filter(([key, b]) => b.kind === 'image' && (edited.get(`${p.id}.${key}`) ?? b.default) === id)
+      .map(([, b]) => `Page: ${p.label} · ${b.label}`),
+  );
+  return [...results.map((r) => `Journal: ${r.title}`), ...pageUses];
 }
 
 export async function deleteMedia(db: D1Database, bucket: R2Bucket, m: Media) {

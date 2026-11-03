@@ -1,22 +1,22 @@
 ---
+import { env } from 'cloudflare:workers';
 import LegalLayout from '../layouts/LegalLayout.astro';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/privacy';
 
-const [title, description] = META['/privacy'];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const sections = ([1, 2, 3, 4, 5, 6] as const).map((n) => [c.t[`section${n}Title` as const], c.md(`section${n}Body` as const)]);
 ---
-<LegalLayout title={title} description={description} heading="Privacy policy" updated="July 2026"
-  placeholder="GDPR-aligned draft for review by counsel/DPO before launch.">
-  <p>Fairway Atelier SAS ("we") is the data controller for personal data collected through this website, in accordance with the EU General Data Protection Regulation (GDPR) and the French Loi Informatique et Libertés.</p>
-  <h2>What we collect</h2>
-  <p>Only what you provide when you enquire: your name, email, phone, dates and group composition, tier interest, and any notes you choose to share (such as dietary needs or handicap). We collect no more than is necessary to arrange your consultation call.</p>
-  <h2>Why we use it</h2>
-  <p>To respond to your enquiry, arrange and conduct your consultation call, build your preference profile, and — only with your consent — to understand aggregate, anonymous site usage. We do not sell personal data, and we do not use it for automated profiling or advertising.</p>
-  <h2>Lawful basis</h2>
-  <p>Enquiries: performance of pre-contractual steps at your request and our legitimate interest in responding. Analytics: your consent, which you may withdraw at any time via our <a href="/cookies">cookie preferences</a>.</p>
-  <h2>Retention</h2>
-  <p>Enquiry data is kept for the duration of our conversation and, where a journey proceeds, for the period required by French tax and tourism law. Otherwise it is deleted three years after our last contact with you.</p>
-  <h2>Your rights</h2>
-  <p>You have the right to access, rectify, erase, restrict, and port your data, and to object to processing. To exercise these rights, or to lodge a complaint, contact atelier@fairwayatelier.com. You may also complain to the CNIL (www.cnil.fr).</p>
-  <h2>Analytics</h2>
-  <p>We use privacy-respecting analytics (such as Plausible, Fathom, or Matomo) that do not set advertising cookies or track you across sites. We do not use Google Analytics.</p>
+<LegalLayout title={c.t.metaTitle} description={c.t.metaDescription} heading={c.t.heading} updated={c.t.updated}
+  placeholder={c.t.placeholder}>
+  <Fragment set:html={c.md('intro')} />
+  {sections.map(([heading, body]) => (
+    <>
+      <h2>{heading}</h2>
+      <Fragment set:html={body} />
+    </>
+  ))}
 </LegalLayout>

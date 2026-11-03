@@ -1,9 +1,41 @@
 import { definePage } from '../copy';
+import { META } from '../site';
 
-// STUB: to be filled with this page's blocks (T-25).
+/** /privacy — defaults are the approved GDPR draft, pending review by counsel/DPO. */
 export default definePage({
   id: 'privacy',
   label: 'Privacy policy',
   path: '/privacy',
-  blocks: {},
+  blocks: {
+    metaTitle: { group: 'Search engines', label: 'Page title (browser tab and Google)', default: META['/privacy'][0] },
+    metaDescription: { group: 'Search engines', label: 'Description (Google)', kind: 'text', default: META['/privacy'][1] },
+
+    heading: { group: 'Top of page', label: 'Title', default: 'Privacy policy' },
+    updated: { group: 'Top of page', label: 'Last updated (month and year)', default: 'July 2026' },
+    placeholder: { group: 'Top of page', label: 'Review note', kind: 'text', default: 'GDPR-aligned draft for review by counsel/DPO before launch.' },
+    intro: { group: 'Top of page', label: 'Introduction', kind: 'markdown', default: 'Fairway Atelier SAS ("we") is the data controller for personal data collected through this website, in accordance with the EU General Data Protection Regulation (GDPR) and the French Loi Informatique et Libertés.' },
+
+    section1Title: { group: 'What we collect', label: 'Heading', default: 'What we collect' },
+    section1Body: { group: 'What we collect', label: 'Text', kind: 'markdown', default: 'Only what you provide when you enquire: your name, email, phone, dates and group composition, tier interest, and any notes you choose to share (such as dietary needs or handicap). We collect no more than is necessary to arrange your consultation call.' },
+
+    section2Title: { group: 'Why we use it', label: 'Heading', default: 'Why we use it' },
+    section2Body: { group: 'Why we use it', label: 'Text', kind: 'markdown', default: 'To respond to your enquiry, arrange and conduct your consultation call, build your preference profile, and — only with your consent — to understand aggregate, anonymous site usage. We do not sell personal data, and we do not use it for automated profiling or advertising.' },
+
+    section3Title: { group: 'Lawful basis', label: 'Heading', default: 'Lawful basis' },
+    section3Body: { group: 'Lawful basis', label: 'Text', kind: 'markdown', default: 'Enquiries: performance of pre-contractual steps at your request and our legitimate interest in responding. Analytics: your consent, which you may withdraw at any time via our [cookie preferences](/cookies).' },
+
+    section4Title: { group: 'Retention', label: 'Heading', default: 'Retention' },
+    section4Body: { group: 'Retention', label: 'Text', kind: 'markdown', default: 'Enquiry data is kept for the duration of our conversation and, where a journey proceeds, for the period required by French tax and tourism law. Otherwise it is deleted three years after our last contact with you.' },
+
+    section5Title: { group: 'Your rights', label: 'Heading', default: 'Your rights' },
+    section5Body: {
+      group: 'Your rights',
+      label: 'Text',
+      kind: 'markdown',
+      default: 'You have the right to access, rectify, erase, restrict, and port your data, and to object to processing. To exercise these rights, or to lodge a complaint, contact atelier@fairwayatelier.com. You may also complain to the CNIL (www.cnil.fr).',
+    },
+
+    section6Title: { group: 'Analytics', label: 'Heading', default: 'Analytics' },
+    section6Body: { group: 'Analytics', label: 'Text', kind: 'markdown', default: 'We use privacy-respecting analytics (such as Plausible, Fathom, or Matomo) that do not set advertising cookies or track you across sites. We do not use Google Analytics.' },
+  },
 });

@@ -3,27 +3,27 @@ import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import MediaImage from '../../components/MediaImage.astro';
-import { META } from '../../lib/site';
+import { loadPage } from '../../lib/copy';
+import page from '../../lib/pages/journal';
 import { publishedArticles, splitFeatured } from '../../lib/articles';
 
-// Rendered on each request from the articles published in /admin/journal.
+// Rendered on each request from the articles published in /admin/journal and the copy edited in /admin/pages.
 export const prerender = false;
 
-const [title, description] = META['/journal'];
+const c = await loadPage(env.DB, page);
 const { featured, rest: posts } = splitFeatured(await publishedArticles(env.DB));
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}>
   <main id="main" class="sec" style="--max:1200px; --pt:0px; --pb:96px">
-    <PageHero eyebrow="Journal" title="Notes from the coast"
-      intro="Dispatches on the courses, the tables, and the craft of an effortless week — written by the team who arrange them." />
+    <PageHero eyebrow={c.t.heroEyebrow} title={c.t.heroTitle} intro={c.t.heroIntro} />
     {featured && (
       <a href={`/journal/${featured.slug}`} class="featured grid split-wide">
         {featured.hero && <MediaImage media={featured.hero} alt="" class="featured__img" sizes="(max-width: 960px) 100vw, 600px" />}
         <div class="featured__body">
-          <div class="label">Featured · {featured.kicker}</div>
+          <div class="label">{c.t.featuredLabel} · {featured.kicker}</div>
           <h2 class="display-sm">{featured.title}</h2>
           <p>{featured.excerpt}</p>
-          <span class="read-more featured__more">Read the note</span>
+          <span class="read-more featured__more">{c.t.readMore}</span>
         </div>
       </a>
     )}
@@ -34,7 +34,7 @@ const { featured, rest: posts } = splitFeatured(await publishedArticles(env.DB))
           <div class="post__body">
             <div class="label">{p.kicker}</div>
             <h3>{p.title}</h3>
-            <div class="post__read">{p.read_time} read</div>
+            <div class="post__read">{p.read_time} {c.t.readSuffix}</div>
           </div>
         </a>
       ))}

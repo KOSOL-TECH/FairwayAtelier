@@ -4,27 +4,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { Eyebrow } from '../components/ui/Eyebrow';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/availability';
 import { upcomingWeeks, yearSpan } from '../lib/weeks';
 
-// Rendered on each request from the weeks edited in /admin/weeks.
+// Rendered on each request from the weeks edited in /admin/weeks and the copy edited in /admin/pages.
 export const prerender = false;
 
+const c = await loadPage(env.DB, page);
 const weeks = await upcomingWeeks(env.DB);
 const years = yearSpan(weeks);
-const [title, metaDescription] = META['/availability'];
-const description = metaDescription.replace('Opened weeks for 2026.', years ? `Opened weeks for ${years}.` : 'Opened weeks.');
-const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'waitlist' ? 'Join the waitlist' : 'Enquire about this week';
+const description = c.t.metaDescription.replace('Opened weeks for 2026.', years ? `Opened weeks for ${years}.` : 'Opened weeks.');
+const cta = (status: string) => status === 'sold' ? c.t.ctaSold : status === 'waitlist' ? c.t.ctaWaitlist : c.t.ctaOpen;
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={c.t.metaTitle} description={description}>
   <main id="main" class="sec" style="--max:900px; --pt:72px; --pb:96px">
     <div class="center head">
-      <Eyebrow rules tone="brass">Availability</Eyebrow>
-      <h1 class="display-lg">{years ? `Opened weeks for ${years}` : 'Opened weeks'}</h1>
-      <p>Each week runs for a single group of four. Select a week to see tier availability and the tables confirmed so far.</p>
+      <Eyebrow rules tone="brass">{c.t.heroEyebrow}</Eyebrow>
+      <h1 class="display-lg">{years ? `${c.t.heading} for ${years}` : c.t.heading}</h1>
+      <p>{c.t.heroIntro}</p>
     </div>
     {weeks.length === 0 && (
-      <p class="center empty">New weeks are being prepared. Enquire and we will hold your preferred dates.</p>
+      <p class="center empty">{c.t.emptyState}</p>
     )}
     <div class="weeks">
       {weeks.map((w, i) => (
@@ -35,9 +36,9 @@ const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'wai
             <span class="chevron" aria-hidden="true"></span>
           </summary>
           <div class="week__detail">
-            <div><div class="label week__lbl">Standard — EMERIA</div><div class="week__val">{w.standard}</div></div>
-            <div><div class="label week__lbl">Signature — Barrière</div><div class="week__val">{w.signature}</div></div>
-            <div><div class="label week__lbl">Headline tables</div><div class="week__val">{w.dining}</div></div>
+            <div><div class="label week__lbl">{c.t.standardLabel}</div><div class="week__val">{w.standard}</div></div>
+            <div><div class="label week__lbl">{c.t.signatureLabel}</div><div class="week__val">{w.signature}</div></div>
+            <div><div class="label week__lbl">{c.t.diningLabel}</div><div class="week__val">{w.dining}</div></div>
             <div class="week__cta">
               <Button size="sm" href="/enquire" disabled={w.status === 'sold'}>{cta(w.status)}</Button>
             </div>
@@ -46,7 +47,7 @@ const cta = (status: string) => status === 'sold' ? 'Sold out' : status === 'wai
       ))}
     </div>
     <p class="disclosure foot">
-      Named restaurants, hotels, and courses are illustrative of the experience. Final inclusions per trip are subject to availability and confirmed during the consultation call.
+      {c.t.footnote}
     </p>
   </main>
 </BaseLayout>

@@ -1,12 +1,12 @@
 ---
-import { Image } from 'astro:assets';
+import MediaImage from './MediaImage.astro';
 import { Eyebrow } from './ui/Eyebrow';
 
 interface Props {
   label: string;
   title: string;
   lead: string;
-  items: Array<{ img: ImageMetadata; name: string; meta: string; copy: string }>;
+  items: Array<{ img: { id: string; width: number; height: number; alt: string } | null; name: string; meta: string; copy: string }>;
 }
 const { label, title, lead, items } = Astro.props;
 ---
@@ -17,7 +17,7 @@ const { label, title, lead, items } = Astro.props;
   <div class="grid grid-3">
     {items.map((c) => (
       <div class="venue">
-        <Image src={c.img} alt={c.name} class="media media--4x3" widths={[360, 720]} sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
+        {c.img && <MediaImage media={c.img} alt={c.name} class="media media--4x3" sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />}
         <div class="venue__body">
           <div class="label">{c.meta}</div>
           <h3>{c.name}</h3>

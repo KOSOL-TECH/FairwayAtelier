@@ -1,13 +1,21 @@
 ---
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Eyebrow } from '../components/ui/Eyebrow';
 import { Button } from '../components/ui/Button';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/not-found';
+
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
 ---
-<BaseLayout title="Page not found — Fairway Atelier" description="This page could not be found." index={false}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription} index={false}>
   <main id="main" class="sec center" style="--max:720px; --pt:96px; --pb:96px">
-    <Eyebrow rules tone="brass">Not found</Eyebrow>
-    <h1 class="display-lg" style="margin:16px 0 18px">This page has wandered off the fairway</h1>
-    <p style="font-size:16px; margin:0 0 32px">The page you were looking for has moved or no longer exists.</p>
-    <Button href="/">Return home</Button>
+    <Eyebrow rules tone="brass">{c.t.eyebrow}</Eyebrow>
+    <h1 class="display-lg" style="margin:16px 0 18px">{c.t.title}</h1>
+    <p style="font-size:16px; margin:0 0 32px">{c.t.copy}</p>
+    <Button href="/">{c.t.button}</Button>
   </main>
 </BaseLayout>

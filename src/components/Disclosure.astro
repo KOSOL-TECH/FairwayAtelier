@@ -1,6 +1,11 @@
 ---
-/** Named-asset disclosure, required wherever restaurants, hotels or courses are named. */
+/** Named-asset disclosure, required wherever restaurants, hotels or courses are named. Edited with the footer (/admin/pages). */
+import { env } from 'cloudflare:workers';
+import { loadPage } from '../lib/copy';
+import footer from '../lib/pages/footer';
+
+const c = await loadPage(env.DB, footer);
 ---
 <p class="disclosure">
-  Named restaurants, hotels, and courses are illustrative of the experience we curate. Final inclusions per trip are subject to availability and confirmed during the consultation call.
+  {c.t.disclosure}
 </p>

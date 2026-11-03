@@ -8,13 +8,12 @@ import MediaImage from '../../components/MediaImage.astro';
 import { SITE_URL, canonical } from '../../lib/site';
 import { getArticle, renderMarkdown } from '../../lib/articles';
 import { mediaUrl } from '../../lib/media';
-import { notFound } from '../../lib/not-found';
 
 // Rendered on each request from the articles edited in /admin/journal.
 export const prerender = false;
 
 const a = await getArticle(env.DB, Astro.params.slug ?? '');
-if (!a) return notFound(Astro.url);
+if (!a) return Astro.rewrite('/404');
 const html = renderMarkdown(a.body);
 const title = `${a.title} — Fairway Atelier`;
 

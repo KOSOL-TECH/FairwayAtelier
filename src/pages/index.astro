@@ -1,4 +1,5 @@
 ---
+import { env } from 'cloudflare:workers';
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { Button } from '../components/ui/Button';
@@ -6,58 +7,58 @@ import { Eyebrow } from '../components/ui/Eyebrow';
 import Departures from '../components/Departures.astro';
 import { Divider } from '../components/ui/Divider';
 import { Testimonials } from '../components/islands/Testimonials';
-import { META } from '../lib/site';
+import MediaImage from '../components/MediaImage.astro';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/home';
 import heroVilla from '../assets/hero-villa.png';
 import crest from '../assets/crest.png';
-import imgDestination from '../assets/img-destination.png';
-import imgDining from '../assets/img-dining.png';
-import imgHeritage from '../assets/img-club-heritage.png';
 
-const [title, description] = META['/'];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
 
-const voices = [
-  { quote: 'We arrived with clubs and an appetite, and for eight days lifted not a finger. The finest week we have given ourselves.', name: 'R. & M. Callahan', detail: 'The Signature Journey · September 2025' },
-  { quote: 'Dinner at Le Coquillage, a round above the Atlantic, and never once a bill. That is the whole trick, and they have mastered it.', name: 'James Ellory', detail: 'The Standard Journey · May 2025' },
-  { quote: 'I came for the golf; my wife came for the coast. We both left saying it was the best-organised holiday of our lives.', name: 'Dr. P. Hargreave', detail: 'The 8-Day Journey · June 2025' },
-];
-const atmospheres = [
-  { slug: 'coast', img: imgDestination, title: 'The Golf', copy: 'Old, beautiful French seaside courses — and your own English-speaking pro at your side all week, committed to your game.' },
-  { slug: 'dining', img: imgDining, title: 'The Table', copy: 'Fine dining and beautiful wines every day, set against sea-side cliffs and breathtaking scenery.' },
-  { slug: 'restore', img: imgHeritage, title: 'The Ease', copy: 'Small groups, true luxury, everything taken care of. Touchless — you never see a bill — with a 24/7 concierge.' },
-];
-const tiers = [
-  { eyebrow: 'Standard Tier', name: 'EMERIA Dinard', copy: 'Anchored at EMERIA Dinard Hôtel Thalasso & Spa — the largest thalassotherapy institute on the coast, and the heart of our restorative rhythm.', cta: 'Explore the Standard journey' },
-  { eyebrow: 'Signature Tier', name: 'Hôtel Barrière', copy: 'Anchored at Hôtel Barrière Le Grand Hôtel Dinard, a Belle-Époque grand hotel facing the bay of Saint-Malo, member of Leading Hotels of the World.', cta: 'Explore the Signature journey' },
-];
-const trust = [
-  ['France-based', 'A team on the ground, not a call centre'],
-  ['Intimate', 'Four guests to a journey, never a crowd'],
-  ['Named-host', 'One concierge, from enquiry to farewell'],
-  ['Fully handled', 'No wallet, no logistics — only the days themselves'],
-];
+const c = await loadPage(env.DB, page);
+
+const voices = ([1, 2, 3] as const).map((n) => ({
+  quote: c.t[`voice${n}Quote` as const],
+  name: c.t[`voice${n}Name` as const],
+  detail: c.t[`voice${n}Detail` as const],
+}));
+const atmospheres = ([[1, 'coast'], [2, 'dining'], [3, 'restore']] as const).map(([n, slug]) => ({
+  slug,
+  img: c.img(`card${n}Image` as const)!,
+  title: c.t[`card${n}Title` as const],
+  copy: c.t[`card${n}Copy` as const],
+}));
+const tiers = ([1, 2] as const).map((n) => ({
+  eyebrow: c.t[`tier${n}Eyebrow` as const],
+  name: c.t[`tier${n}Name` as const],
+  copy: c.t[`tier${n}Copy` as const],
+  cta: c.t[`tier${n}Button` as const],
+}));
+const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const], c.t[`trust${n}Copy` as const]]);
 ---
-<BaseLayout title={title} description={description}
-  ogDescription="Championship links, Michelin tables, and a touchless, walletless week on the Emerald Coast of Brittany. You will never see a bill during your trip.">
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}
+  ogDescription={c.t.ogDescription}>
   <main id="main">
     <section class="hero">
       <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--right" width={420} densities={[1]} loading="eager" />
       <Image src={heroVilla} alt="" aria-hidden="true" class="hero__villa hero__villa--left" width={420} densities={[1]} loading="eager" />
       <div class="hero__content">
         <Image src={crest} alt="" height={104} densities={[1, 2]} loading="eager" class="hero__crest" />
-        <h1 class="display-xl">Bespoke luxury golf travel, beautifully arranged.</h1>
-        <p class="hero__lead">France golf holidays shaped by fine dining, beautiful scenery, attentive hospitality, and the quiet ease of having every detail handled.</p>
+        <h1 class="display-xl">{c.t.heroTitle}</h1>
+        <p class="hero__lead">{c.t.heroLead}</p>
         <div class="hero__ctas">
-          <Button href="/availability">View available departures</Button>
-          <Button variant="secondary" href="/enquire">Enquire about a private journey</Button>
+          <Button href="/availability">{c.t.heroButton1}</Button>
+          <Button variant="secondary" href="/enquire">{c.t.heroButton2}</Button>
         </div>
       </div>
     </section>
     <Divider ornament tone="brass" style={{ maxWidth: 320, margin: '0 auto' }} />
 
     <section class="sec center" style="--max:780px; --pt:80px; --pb:20px">
-      <Eyebrow rules tone="brass">The Fairway Atelier Experience</Eyebrow>
+      <Eyebrow rules tone="brass">{c.t.introEyebrow}</Eyebrow>
       <p class="intro">
-        Eight unhurried days on the Emerald Coast of Brittany — championship links by day, three-Michelin tables by night, and the calm of a place that runs entirely without you having to ask.
+        {c.t.introText}
       </p>
     </section>
 
@@ -65,10 +66,10 @@ const trust = [
       <div class="grid grid-3">
         {atmospheres.map((a) => (
           <a href={`/journal/${a.slug}`} class="atmos">
-            <Image src={a.img} alt={a.title} class="media media--4x3 atmos__img" widths={[360, 720]} sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
+            <MediaImage media={a.img} alt={a.title} class="media media--4x3 atmos__img" sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
             <h2>{a.title}</h2>
             <p>{a.copy}</p>
-            <span class="read-more">Read more</span>
+            <span class="read-more">{c.t.cardReadMore}</span>
           </a>
         ))}
       </div>
@@ -76,18 +77,18 @@ const trust = [
 
     <section class="band band--tint" style="--max:900px; --pt:80px; --pb:80px">
       <div class="inner">
-        <Eyebrow rules tone="brass">Available Departures</Eyebrow>
-        <h2 class="display-md center departures__title">The next bookable weeks</h2>
+        <Eyebrow rules tone="brass">{c.t.departuresEyebrow}</Eyebrow>
+        <h2 class="display-md center departures__title">{c.t.departuresTitle}</h2>
         <Departures server:defer>
           <Departures skeleton slot="fallback" />
         </Departures>
-        <div class="center" style="margin-top:28px"><Button href="/availability">See full availability</Button></div>
+        <div class="center" style="margin-top:28px"><Button href="/availability">{c.t.departuresButton}</Button></div>
       </div>
     </section>
 
     <section class="sec" style="--max:1080px; --pt:88px; --pb:88px">
-      <Eyebrow rules tone="brass">Two Ways to Stay</Eyebrow>
-      <h2 class="display-lg center tiers__title">Choose the rhythm that suits you</h2>
+      <Eyebrow rules tone="brass">{c.t.tiersEyebrow}</Eyebrow>
+      <h2 class="display-lg center tiers__title">{c.t.tiersTitle}</h2>
       <div class="grid split">
         {tiers.map((t) => (
           <div class="frame">
@@ -95,7 +96,7 @@ const trust = [
               <div class="label">{t.eyebrow}</div>
               <h3>{t.name}</h3>
               <p>{t.copy}</p>
-              <div class="label label--12">Priced on request</div>
+              <div class="label label--12">{c.t.tierPrice}</div>
               <div style="margin-top:18px"><Button variant="ghost" href="/journey">{t.cta}</Button></div>
             </div>
           </div>
@@ -105,11 +106,11 @@ const trust = [
 
     <section class="band band--inverse" style="--max:1000px; --pt:76px; --pb:76px">
       <div class="inner grid grid-4 center" style="--gap:32px">
-        {trust.map(([t, c]) => (
+        {trust.map(([t, copy]) => (
           <div>
             <div class="trust__title">{t}</div>
             <div class="trust__rule" aria-hidden="true"></div>
-            <p class="trust__copy">{c}</p>
+            <p class="trust__copy">{copy}</p>
           </div>
         ))}
       </div>
@@ -117,15 +118,15 @@ const trust = [
 
     <section class="band band--tint" style="--max:760px; --pt:84px; --pb:84px">
       <div class="inner voices">
-        <Eyebrow rules tone="brass">In Their Words</Eyebrow>
+        <Eyebrow rules tone="brass">{c.t.voicesEyebrow}</Eyebrow>
         <Testimonials client:idle voices={voices} />
       </div>
     </section>
 
     <section class="sec center" style="--pt:84px; --pb:84px">
-      <Eyebrow tone="brass">Begin</Eyebrow>
-      <h2 class="display-lg closing__title">Your week in Brittany starts with a conversation.</h2>
-      <Button size="lg" href="/enquire">View available departures</Button>
+      <Eyebrow tone="brass">{c.t.closingEyebrow}</Eyebrow>
+      <h2 class="display-lg closing__title">{c.t.closingTitle}</h2>
+      <Button size="lg" href="/enquire">{c.t.closingButton}</Button>
     </section>
   </main>
 </BaseLayout>

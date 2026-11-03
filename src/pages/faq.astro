@@ -1,29 +1,25 @@
 ---
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { Button } from '../components/ui/Button';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/faq';
 
-const [title, description] = META['/faq'];
-const faqs = [
-  ['Are flights included?', 'No. We keep pricing clean and let you fly as you prefer — but we are glad to arrange business- or first-class travel, or private charter, as an add-on to your journey.'],
-  ['How does pricing work?', 'Every journey is bespoke and priced on request. After a short consultation call we send a written, personalised proposal; no sum is ever collected through this website.'],
-  ['What is the “no-wallet” promise?', 'Once your journey begins you will never see a bill. Tables, transfers, tee times, and companion arrangements are all settled ahead and quietly maintained — touchless and walletless, start to finish.'],
-  ['Who is the journey for?', 'Couples and small groups who love the game and the good life in equal measure. Each week takes a single group of four; larger private groups are arranged separately.'],
-  ['Do companions who don’t play golf enjoy it?', 'Very much so. A parallel itinerary runs alongside the rounds — thalasso, Saint-Malo, Cancale, Mont-Saint-Michel, and the Belle-Époque coast.'],
-  ['What is the difference between the two tiers?', 'The journey is identical; the hotel differs. Standard is anchored at EMERIA Dinard (thalasso-led); Signature at Hôtel Barrière (a Belle-Époque grand hotel). You choose on the consultation call.'],
-  ['How far ahead should we book?', 'Weeks are released in limited numbers and often fill months ahead. If your preferred dates show as waitlisted, enquire anyway — arrangements do change.'],
-  ['What if we need to cancel?', 'Cancellation terms follow your written proposal and French travel law. Because named tables and rooms are held on your behalf, terms reflect commitments already made to our partners.'],
-];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const faqs = ([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => [c.t[`q${n}` as const], c.t[`a${n}` as const]]);
 const faqLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: faqs.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
 };
 ---
-<BaseLayout title={title} description={description} jsonLd={[faqLd]}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription} jsonLd={[faqLd]}>
   <main id="main">
-    <PageHero eyebrow="Questions" title="Frequently asked" intro="If your question isn't answered here, our France-based team is a message away." />
+    <PageHero eyebrow={c.t.heroEyebrow} title={c.t.heroTitle} intro={c.t.heroIntro} />
     <section class="sec" style="--max:820px; --pt:24px; --pb:40px">
       {faqs.map(([q, a], i) => (
         <details class="faq" open={i === 0}>
@@ -36,7 +32,7 @@ const faqLd = {
       ))}
     </section>
     <section class="sec center" style="--pt:32px; --pb:80px">
-      <Button variant="secondary" href="/enquire">Ask us anything</Button>
+      <Button variant="secondary" href="/enquire">{c.t.ctaButton}</Button>
     </section>
   </main>
 </BaseLayout>

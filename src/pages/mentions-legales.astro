@@ -1,31 +1,24 @@
 ---
+import { env } from 'cloudflare:workers';
 import LegalLayout from '../layouts/LegalLayout.astro';
-import { ATOUT_FRANCE, CONTACT_EMAIL, META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/mentions-legales';
 
-const [title, description] = META['/mentions-legales'];
-const rows = [
-  ['Company', 'Fairway Atelier SAS'],
-  ['Legal form', 'Société par actions simplifiée (SAS)'],
-  ['Share capital', '€XX,000'],
-  ['Registered office', '[Street], Dinard, 35800, France'],
-  ['RCS / SIREN', 'RCS Saint-Malo XXX XXX XXX'],
-  ['VAT (TVA)', 'FR XX XXX XXX XXX'],
-  ['Travel licence', `Atout France ${ATOUT_FRANCE}`],
-  ['Financial guarantee', '[Guarantor], per Art. L.211-18 Code du tourisme'],
-  ['Professional insurance', '[Insurer], [policy no.]'],
-  ['Publication director', '[Name], President'],
-  ['Contact', CONTACT_EMAIL],
-];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const rows = ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const).map((n) => [c.t[`row${n}Label` as const], c.t[`row${n}Value` as const]]);
 ---
-<LegalLayout title={title} description={description} heading="Mentions légales" updated="July 2026"
-  placeholder="Draft for review by French counsel before launch. Registration numbers below are placeholders.">
-  <p>In accordance with Article 6 of French Law No. 2004-575 of 21 June 2004 (LCEN), the following information is provided to users of this website.</p>
-  <h2>Publisher</h2>
+<LegalLayout title={c.t.metaTitle} description={c.t.metaDescription} heading={c.t.heading} updated={c.t.updated}
+  placeholder={c.t.placeholder}>
+  <Fragment set:html={c.md('intro')} />
+  <h2>{c.t.publisherTitle}</h2>
   <dl>
     {rows.map(([k, v]) => <div class="row"><dt>{k}</dt><dd>{v}</dd></div>)}
   </dl>
-  <h2>Hosting</h2>
-  <p>This website is hosted by [Host name], [address], [contact]. All servers are located within the European Union.</p>
-  <h2>Intellectual property</h2>
-  <p>All content — text, images, logos, and the Fairway Atelier name and crest — is the property of Fairway Atelier SAS or its licensors and may not be reproduced without prior written consent.</p>
+  <h2>{c.t.hostingTitle}</h2>
+  <Fragment set:html={c.md('hostingBody')} />
+  <h2>{c.t.ipTitle}</h2>
+  <Fragment set:html={c.md('ipBody')} />
 </LegalLayout>

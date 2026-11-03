@@ -1,7 +1,14 @@
 ---
+import { env } from 'cloudflare:workers';
 import { Image } from 'astro:assets';
 import crest from '../assets/crest.png';
-import { ATOUT_FRANCE, CONTACT_EMAIL, ENTITY, FOOTER_JOURNEY, FOOTER_LEGAL, FOOTER_PLAN } from '../lib/site';
+import { CONTACT_EMAIL, FOOTER_JOURNEY, FOOTER_LEGAL, FOOTER_PLAN } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import footer from '../lib/pages/footer';
+
+const c = await loadPage(env.DB, footer);
+// Legal link labels are editable; their URLs stay in FOOTER_LEGAL.
+const legal = ([1, 2, 3, 4] as const).map((n, i) => [c.t[`legal${n}Label` as const], FOOTER_LEGAL[i][1]]);
 ---
 <footer class="site-footer">
   <div class="site-footer__grid">
@@ -9,36 +16,36 @@ import { ATOUT_FRANCE, CONTACT_EMAIL, ENTITY, FOOTER_JOURNEY, FOOTER_LEGAL, FOOT
       <div class="site-footer__crest">
         <Image src={crest} alt="" height={60} densities={[1, 2]} />
       </div>
-      <div class="site-footer__tagline">Play Beautifully. Travel Effortlessly.</div>
+      <div class="site-footer__tagline">{c.t.tagline}</div>
     </div>
     <nav aria-labelledby="ft-journey">
-      <div id="ft-journey" class="site-footer__heading">Journey</div>
+      <div id="ft-journey" class="site-footer__heading">{c.t.journeyHeading}</div>
       <div class="site-footer__links">
         {FOOTER_JOURNEY.map(([label, href]) => <a href={href}>{label}</a>)}
       </div>
     </nav>
     <nav aria-labelledby="ft-plan">
-      <div id="ft-plan" class="site-footer__heading">Plan</div>
+      <div id="ft-plan" class="site-footer__heading">{c.t.planHeading}</div>
       <div class="site-footer__links">
         {FOOTER_PLAN.map(([label, href]) => <a href={href}>{label}</a>)}
       </div>
     </nav>
     <div>
-      <div class="site-footer__heading">Enquiries</div>
+      <div class="site-footer__heading">{c.t.enquiriesHeading}</div>
       <div class="site-footer__col">
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><br />By appointment<br />France-based team
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><br />{c.t.enquiriesLine1}<br />{c.t.enquiriesLine2}
       </div>
     </div>
   </div>
   <div class="site-footer__legal">
     <p class="site-footer__disclosure">
-      Named restaurants, hotels, and courses are illustrative of the experience we curate. Final inclusions per trip are subject to availability and confirmed during the consultation call.
+      {c.t.disclosure}
     </p>
     <div class="site-footer__bottom">
-      <span>© 2026 {ENTITY.toUpperCase()} — ATOUT FRANCE {ATOUT_FRANCE}</span>
+      <span>{c.t.legalLine}</span>
       <span class="site-footer__legal-links">
-        {FOOTER_LEGAL.map(([label, href]) => <a href={href}>{label}</a>)}
-        <button type="button" class="site-footer__cookie-btn" data-open-consent>Cookie settings</button>
+        {legal.map(([label, href]) => <a href={href}>{label}</a>)}
+        <button type="button" class="site-footer__cookie-btn" data-open-consent>{c.t.cookieSettings}</button>
       </span>
     </div>
   </div>

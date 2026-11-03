@@ -1,9 +1,76 @@
 import { definePage } from '../copy';
+import { META } from '../site';
 
-// STUB: to be filled with this page's blocks (T-25).
+/** /journey — defaults are the approved copy from prototype/ui_kits/website. */
 export default definePage({
   id: 'journey',
   label: 'The Journey',
   path: '/journey',
-  blocks: {},
+  blocks: {
+    metaTitle: { group: 'Search engines', label: 'Page title (browser tab and Google)', default: META['/journey'][0] },
+    metaDescription: { group: 'Search engines', label: 'Description (Google)', kind: 'text', default: META['/journey'][1] },
+
+    heroEyebrow: { group: 'Top of page', label: 'Eyebrow', default: 'The 8-Day Journey' },
+    heroTitle: { group: 'Top of page', label: 'Title', default: 'Eight days on the Emerald Coast' },
+    heroIntro: { group: 'Top of page', label: 'Introduction', kind: 'text', default: 'An 8-day, 7-night journey for a single group of four — four rounds of championship golf, two unmistakable Michelin moments, and the whole of Brittany arranged around you.' },
+
+    diffLabel: { group: 'Fairway Atelier Difference band', label: 'Small label', default: 'The Fairway Atelier Difference' },
+    diffTitle: { group: 'Fairway Atelier Difference band', label: 'Title', default: 'You will never see a bill during your trip.' },
+    diffCopy: { group: 'Fairway Atelier Difference band', label: 'Text', kind: 'text', default: 'No cheques at dinner, no tabs at the bar, no settling up with a driver. Timing, reservations, transfers, tee times, restaurant access, and every companion arrangement are handled before you arrive and quietly maintained throughout. Touchless and walletless, from the first car door to the last. You carry a set of clubs and an appetite — we carry everything else.' },
+    diffPoint1: { group: 'Fairway Atelier Difference band', label: 'Point 1', default: 'Nothing to sign' },
+    diffPoint2: { group: 'Fairway Atelier Difference band', label: 'Point 2', default: 'Nothing to arrange' },
+    diffPoint3: { group: 'Fairway Atelier Difference band', label: 'Point 3', default: 'Nothing to carry' },
+
+    daysEyebrow: { group: 'Day by day', label: 'Eyebrow', default: 'Day by Day' },
+    daysTitle: { group: 'Day by day', label: 'Title', default: 'The rhythm of the week' },
+    daysIntro: { group: 'Day by day', label: 'Introduction', kind: 'text', default: 'The same narrative whichever tier you choose. The hotels differ; the care does not.' },
+    day1Label: { group: 'Day by day', label: 'Day 1 label', default: 'Day 1' },
+    day1Title: { group: 'Day by day', label: 'Day 1 title', default: 'Arrival in Paris' },
+    day1Copy: { group: 'Day by day', label: 'Day 1 text', kind: 'text', default: 'Met at CDG or Orly and driven to a five-star Paris hotel. No itinerary, no pressure — only a calm dinner and a good night\'s sleep. The trip begins the moment your car door closes.' },
+    day2Label: { group: 'Day by day', label: 'Day 2 label', default: 'Day 2' },
+    day2Title: { group: 'Day by day', label: 'Day 2 title', default: 'Le Jules Verne, then the calm chapter' },
+    day2Copy: { group: 'Day by day', label: 'Day 2 text', kind: 'text', default: 'A lazy Paris morning, then lunch at Le Jules Verne inside the Eiffel Tower (two Michelin stars). Your chauffeur is waiting at the South Pillar; a short transfer to Montparnasse, then TGV Première to Brittany — a restful two hours rather than four in a car. A driver meets your carriage at Rennes; you are at your hotel on the Emerald Coast by early evening.' },
+    day3Label: { group: 'Day by day', label: 'Day 3 label', default: 'Day 3' },
+    day3Title: { group: 'Day by day', label: 'Day 3 title', default: 'Golf de Dinard' },
+    day3Copy: { group: 'Day by day', label: 'Day 3 text', kind: 'text', default: 'The heritage opener — the second-oldest course in France (1887), minutes from your hotel. A round with your own English-speaking PGA professional, an unhurried lunch at the course, and the afternoon at your pace. Your companion has the thalasso and the coast.' },
+    day4Label: { group: 'Day by day', label: 'Day 4 label', default: 'Day 4' },
+    day4Title: { group: 'Day by day', label: 'Day 4 title', default: 'The coastal links' },
+    day4Copy: { group: 'Day by day', label: 'Day 4 text', kind: 'text', default: 'Saint-Cast Côte d\'Émeraude or Pléneuf-Val-André, chosen for the week\'s weather and light. Cliff-top fairways above the Atlantic, a table near the course, and home before dusk.' },
+    day5Label: { group: 'Day by day', label: 'Day 5 label', default: 'Day 5' },
+    day5Title: { group: 'Day by day', label: 'Day 5 title', default: 'The centrepiece' },
+    day5Copy: { group: 'Day by day', label: 'Day 5 text', kind: 'text', default: 'A day that breathes. A thalasso morning, an optional private crossing to Mont-Saint-Michel, then the headline dinner of the week — Le Coquillage at Saint-Méloir-des-Ondes, three Michelin stars, sea and garden. Delivered before late-week fatigue, when you can savour every course.' },
+    day6Label: { group: 'Day by day', label: 'Day 6 label', default: 'Day 6' },
+    day6Title: { group: 'Day by day', label: 'Day 6 title', default: 'The third round' },
+    day6Copy: { group: 'Day by day', label: 'Day 6 text', kind: 'text', default: 'The alternate coastal course, then a refined but calmer dinner — a local table chosen for the group\'s rhythm rather than another long tasting.' },
+    day7Label: { group: 'Day by day', label: 'Day 7 label', default: 'Day 7' },
+    day7Title: { group: 'Day by day', label: 'Day 7 title', default: 'The final round & a quiet close' },
+    day7Copy: { group: 'Day by day', label: 'Day 7 text', kind: 'text', default: 'One last course, then a closing dinner that is intimate rather than epic — a single Michelin star at Castelbrac, or your hotel\'s own grand dining room. A fitting end, not an endurance test.' },
+    day8Label: { group: 'Day by day', label: 'Day 8 label', default: 'Day 8' },
+    day8Title: { group: 'Day by day', label: 'Day 8 title', default: 'Homeward, unhurried' },
+    day8Copy: { group: 'Day by day', label: 'Day 8 text', kind: 'text', default: 'A late breakfast, a driver to Rennes, TGV to Paris, and a car waiting for your flight. Everything already arranged — right down to the timing of your departure.' },
+
+    tiersEyebrow: { group: 'Hotel tiers', label: 'Eyebrow', default: 'Choose Your Tier' },
+    tiersTitle: { group: 'Hotel tiers', label: 'Title', default: 'Two hotels, one journey' },
+    tiersDisclosure: { group: 'Hotel tiers', label: 'Small print under the tiers', kind: 'text', default: 'Named restaurants and courses are illustrative of the experience we curate. Each week\'s final inclusions are confirmed during your consultation call.' },
+
+    tier1Tab: { group: 'Standard tier', label: 'Tab label', default: 'Standard — EMERIA' },
+    tier1Eyebrow: { group: 'Standard tier', label: 'Small label', default: 'Standard Tier' },
+    tier1Hotel: { group: 'Standard tier', label: 'Hotel name (also the photo description)', default: 'EMERIA Dinard Hôtel Thalasso & Spa' },
+    tier1Image: { group: 'Standard tier', label: 'Hotel photo', kind: 'image', default: 'img-club-heritage' },
+    tier1Lead: { group: 'Standard tier', label: 'Introduction', kind: 'text', default: 'Your home for six nights is a destination thalassotherapy resort — the largest wellness institute on the Emerald Coast, and the restorative heart of the journey.' },
+    tier1Point1: { group: 'Standard tier', label: 'Highlight 1', default: '2,800 m² thalasso & spa institute — 58 treatment rooms' },
+    tier1Point2: { group: 'Standard tier', label: 'Highlight 2', default: 'Heated seawater pools facing the sea' },
+    tier1Point3: { group: 'Standard tier', label: 'Highlight 3', default: 'Sea-view rooms; the Horizon bar\'s panoramic view' },
+    tier1Point4: { group: 'Standard tier', label: 'Highlight 4', default: 'Minutes from Dinard Golf; twenty from Saint-Malo' },
+
+    tier2Tab: { group: 'Signature tier', label: 'Tab label', default: 'Signature — Barrière' },
+    tier2Eyebrow: { group: 'Signature tier', label: 'Small label', default: 'Signature Tier' },
+    tier2Hotel: { group: 'Signature tier', label: 'Hotel name (also the photo description)', default: 'Hôtel Barrière Le Grand Hôtel Dinard' },
+    tier2Image: { group: 'Signature tier', label: 'Hotel photo', kind: 'image', default: 'img-destination' },
+    tier2Lead: { group: 'Signature tier', label: 'Introduction', kind: 'text', default: 'A five-star Belle-Époque grand hotel facing the bay of Saint-Malo, member of Leading Hotels of the World — for those who want the formal grand-hotel signal.' },
+    tier2Point1: { group: 'Signature tier', label: 'Highlight 1', default: 'Le George V dining room; the 333 Café piano-bar' },
+    tier2Point2: { group: 'Signature tier', label: 'Highlight 2', default: 'Spa Diane Barrière; indoor pool, hammam, sauna' },
+    tier2Point3: { group: 'Signature tier', label: 'Highlight 3', default: 'Casino Barrière adjacent; a short walk to the beach' },
+    tier2Point4: { group: 'Signature tier', label: 'Highlight 4', default: 'Optional: charter aviation, a Castelbrac Michelin-room night, a Paris extension' },
+  },
 });
