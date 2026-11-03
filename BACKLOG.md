@@ -10,7 +10,10 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Decision | Notes |
 |---|---|---|
-| D-02 | CRM vendor | Enquiries must be pushed to it. Pick one with an HTTP API usable from a Worker. |
+| D-11 | Who gets admin access | The email addresses allowed to sign in to `/admin` (Cloudflare Access, one-time code by email). Needed for T-21. |
+| D-12 | Images uploaded through the admin | Serve uploads as they are (the editor must upload web-sized files), or resize them with Cloudflare Images transformations (5,000 unique transformations/month free, then $0.50 per 1,000). Needed for T-24. |
+| D-13 | Enquiry retention period | Storing enquiries in the admin (T-23) means the privacy policy must state how long they are kept (it already has a `[XX] months` placeholder, T-08). Pick the period; the admin can then delete older enquiries automatically. |
+| D-14 | Editing approved copy | Once page copy is editable (T-25), the client can change copy that is today "approved verbatim". Confirm that editors may do so without a separate sign-off. |
 | D-03 | Analytics provider | Plausible, Fathom or Matomo. No Google Analytics. Already gated behind consent; only `PUBLIC_ANALYTICS_SRC` / `PUBLIC_ANALYTICS_DOMAIN` need setting. |
 | D-04 | Journal cards without articles | The featured "Why we chose Brittany" and the four post cards on `/journal` have no articles behind them and are not links. Write them, link them to the existing three articles, or remove them. |
 | D-05 | Legal pages in robots.txt vs sitemap | `robots.txt` disallows the four legal pages, but the sitemap lists them (both as in the prototype). Recommendation: drop them from the sitemap. |
@@ -22,7 +25,12 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-05 | Push enquiries to the CRM | Dev | D-02 | Another `EnquirySink`. |
+| T-21 | Admin foundation | Dev | D-11 | See `docs/admin.md`. D1 (`DB`) + R2 (`MEDIA`) bindings, migrations, Cloudflare Access on `/admin*` and `/api/admin/*` with a Worker-side JWT check, admin shell, audit log, seed from today's content files. |
+| T-22 | Admin: availability weeks | Dev | T-21 | Editor for weeks (status, tiers, dining, featured, order, published). `/availability`, the Home preview and the enquiry form's dates read from D1, cached at the edge and purged on save. Past weeks drop off the site by start date. |
+| T-23 | Admin: enquiries inbox | Dev | T-21, D-13 | `D1Sink` stores every enquiry; list and detail, status (new / replied / closed), notes, automatic deletion after the retention period. Base for the CRM. |
+| T-24 | Admin: journal articles and media | Dev | T-21, D-12 | Article editor (Markdown with preview), R2 uploads, alt text required. Resolves D-04 once the client writes the missing articles. |
+| T-25 | Admin: page copy and images | Dev | T-24, D-14 | Keyed copy and image blocks for every page, seeded with today's approved copy, edited on a page preview. |
+| T-05 | CRM in the admin | Dev | T-23 | Client decision 2026-11-03: build the CRM into the admin tool, not a third-party vendor (was D-02). Scope to be agreed after T-23. |
 | T-06 | Wire up analytics | Dev | D-03 | Set env vars; update the cookie policy's cookie table. |
 | T-07 | Add Turnstile to the enquiry form | Dev | D-06 | Client widget + server-side Siteverify in `/api/enquiry`. |
 | T-10 | Licensed photography | Client + Dev | — | Replace the low-res brand-sheet crops in `src/assets/` with licensed hotel, course and dining photos; Astro outputs responsive WebP/AVIF. |
@@ -40,6 +48,8 @@ _Nothing in progress._
 | ID | Decision | Answer |
 |---|---|---|
 | D-01 | Transactional email provider | 2026-11-01: Cloudflare Email Sending (binding `EMAIL`, no API key). |
+| D-02 | CRM vendor | 2026-11-03: none. The CRM will be built into the Fairway Atelier admin (T-05). |
+| — | Content management | 2026-11-03: custom admin on Cloudflare (D1, R2, Access) covering weeks, journal, page copy and images, enquiries inbox. Weeks use manual status only. A few named users, no roles. Design in `docs/admin.md`. |
 | D-10 | Upgrade to the Workers Paid plan ($5/month) | 2026-11-01: upgraded. Needed for Email Sending to reach guests; includes 3,000 emails/month, then $0.35 per 1,000. |
 
 ## Done
