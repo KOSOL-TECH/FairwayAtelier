@@ -38,8 +38,8 @@
   // Cloudflare Access for /admin: the Zero Trust team domain and the Access
   // application's AUD tag. While either is empty, every admin request is refused.
   "vars": {
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM_DOMAIN": "calm-union-38c3.cloudflareaccess.com",
+    "ACCESS_AUD": "e1b80b765ef42223ab20871b56d012ef9a23bdc7486c857d05e9e4b6c27dd21a"
   },
   // Custom domains. Cloudflare creates the DNS records and certificates;
   // the hostnames must not have other DNS records.
