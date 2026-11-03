@@ -29,7 +29,8 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 - **Locally:** run `npx wrangler d1 migrations apply DB --local` once, then `npm run dev` and open `/admin`. There is no Access locally, so you are signed in as `dev@localhost`. `npm run preview` runs the production build, where `/admin` returns 403 without Access.
 - **Schema changes:** add `migrations/000N_name.sql`, apply it locally, then run `npx wrangler d1 migrations apply DB --remote` before pushing code that needs it. Workers Builds does not apply migrations.
 - **Access settings:** `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc` `vars`. While either is empty, every admin request is refused.
-- **Adding a user:** add their email to the Access policy "Admin users" (Zero Trust → Access → Applications → Fairway Atelier Admin).
+- **Access setup:** team `calm-union-38c3.cloudflareaccess.com`, sign-in by One-time PIN (a code emailed to the user), application "Fairway Atelier Admin" covering `fairwayatelier.com/admin` and `fairwayatelier.com/api/admin`, 24-hour sessions. Created with the `cf` CLI (`cf zero-trust access applications`).
+- **Adding a user:** add their email to the policy "Admin users" (Zero Trust → Access → Applications → Fairway Atelier Admin → Policies). No code change needed.
 
 ## Data model (first version)
 
