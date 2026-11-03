@@ -10,8 +10,9 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'never',
   build: { format: 'preserve' },
-  // Images are optimised with Sharp at build time, so no Cloudflare Images binding is needed.
-  adapter: cloudflare({ imageService: 'compile' }),
+  // Images on prerendered pages are optimised with Sharp at build time; pages
+  // rendered on demand (CMS-driven, docs/admin.md) resize through the IMAGES binding.
+  adapter: cloudflare({ imageService: { build: 'compile', runtime: 'cloudflare-binding' } }),
   // No sessions are used, so no KV namespace is provisioned for them.
   session: false,
   integrations: [react()],

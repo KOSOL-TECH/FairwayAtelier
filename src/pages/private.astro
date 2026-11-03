@@ -1,37 +1,36 @@
 ---
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { Button } from '../components/ui/Button';
-import { META } from '../lib/site';
+import { loadPage } from '../lib/copy';
+import page from '../lib/pages/private';
 
-const [title, description] = META['/private'];
-const options = [
-  ['A private week', 'Take an entire week for your own group of four to eight — the whole journey, closed to others, on dates arranged around you.'],
-  ['Charter aviation', 'Private transfer in place of the TGV, or direct charter into Dinard–Pleurtuit, for those who prefer to arrive on their own clock.'],
-  ['A Paris extension', 'Bookend the week with nights in the capital — a suite, a table, and a car, handled to the same standard.'],
-  ['Beyond golf', 'Sailing on the Rance, a private Mont-Saint-Michel crossing, cellar visits, or a day given entirely to the coast.'],
-];
+// Rendered on each request so edits in /admin/pages show at once.
+export const prerender = false;
+
+const c = await loadPage(env.DB, page);
+const options = ([1, 2, 3, 4] as const).map((n) => [c.t[`option${n}Title` as const], c.t[`option${n}Copy` as const]]);
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}>
   <main id="main">
-    <PageHero eyebrow="Private Journeys" title="Entirely your own"
-      intro="Beyond our scheduled weeks, we design private journeys from a blank page — same standard of care, shaped wholly around your group, your dates, and your interests." />
+    <PageHero eyebrow={c.t.heroEyebrow} title={c.t.heroTitle} intro={c.t.heroIntro} />
     <section class="sec" style="--max:1080px; --pt:24px; --pb:72px">
       <div class="grid split">
-        {options.map(([t, c]) => (
+        {options.map(([t, copy]) => (
           <div class="option">
             <div class="option__head"><span class="diamond" aria-hidden="true"></span><h2>{t}</h2></div>
-            <p>{c}</p>
+            <p>{copy}</p>
           </div>
         ))}
       </div>
     </section>
     <section class="band band--inverse center" style="--max:640px">
       <div class="inner">
-        <div class="label label--11 label--light">By Introduction</div>
-        <h2 class="display-md on-dark cta__title">Every private journey begins with a conversation</h2>
-        <p class="on-dark-soft cta__copy">Tell us who is travelling and what would make the week yours. We will design a proposal, and — as with every Fairway Atelier journey — you will never see a bill once you arrive.</p>
-        <Button href="/enquire">Enquire about a private journey</Button>
+        <div class="label label--11 label--light">{c.t.ctaLabel}</div>
+        <h2 class="display-md on-dark cta__title">{c.t.ctaTitle}</h2>
+        <p class="on-dark-soft cta__copy">{c.t.ctaCopy}</p>
+        <Button href="/enquire">{c.t.ctaButton}</Button>
       </div>
     </section>
   </main>

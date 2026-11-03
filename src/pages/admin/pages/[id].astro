@@ -1,0 +1,88 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import { editedBlocks, kindOf, loadPage, savePage, type BlockDef } from '../../../lib/copy';
+import { listMedia, mediaUrl } from '../../../lib/media';
+import { pageById } from '../../../lib/pages';
+
+export const prerender = false;
+
+const def = pageById(Astro.params.id ?? '');
+if (!def) return Astro.redirect('/admin/pages', 303);
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const values: Record<string, string> = {};
+  for (const key of Object.keys(def.blocks)) {
+    const v = form.get(`b_${key}`);
+    if (typeof v === 'string') values[key] = v.slice(0, 50_000);
+  }
+  const changed = await savePage(env.DB, def, values, Astro.locals.adminEmail!);
+  if (changed.length) await logChange(env.DB, Astro.locals.adminEmail!, 'update', 'page', def.id, { blocks: changed });
+  const msg = changed.length ? `${def.label}: ${changed.length} field${changed.length === 1 ? '' : 's'} saved. Live now.` : `${def.label}: nothing changed.`;
+  return Astro.redirect(`/admin/pages/${def.id}?saved=${encodeURIComponent(msg)}`, 303);
+}
+
+const [c, edited, media] = await Promise.all([loadPage(env.DB, def), editedBlocks(env.DB, def.id), listMedia(env.DB)]);
+const entries = Object.entries<BlockDef>(def.blocks);
+const groups = [...new Set(entries.map(([, b]) => b.group ?? 'Content'))];
+const saved = Astro.url.searchParams.get('saved');
+const mediaName = (id: string) => media.find((m) => m.id === id)?.alt || id;
+---
+<AdminLayout title={def.label}>
+  <p><a href="/admin/pages">← All pages</a> · <a href={def.path} target="_blank" rel="noopener">View the page</a></p>
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  <p class="admin-intro">
+    Fields marked <span class="admin-tag">Edited</span> differ from the approved original, shown under each field.
+    To restore it, copy the original back in and save.
+  </p>
+
+  <form method="post" class="admin-form admin-form--wide">
+    {groups.map((g) => (
+      <fieldset>
+        <legend>{g}</legend>
+        {entries.filter(([, b]) => (b.group ?? 'Content') === g).map(([key, b]) => {
+          const kind = kindOf(b);
+          const name = `b_${key}`;
+          const value = c.t[key];
+          return (
+            <div class="admin-row">
+              <label for={name}>{b.label} {edited.has(key) && <span class="admin-tag">Edited</span>}</label>
+              {kind === 'line' && <input type="text" id={name} name={name} value={value} />}
+              {kind === 'text' && <textarea id={name} name={name} rows={Math.min(8, Math.max(2, Math.ceil(value.length / 90)))}>{value}</textarea>}
+              {kind === 'markdown' && <textarea id={name} name={name} rows={Math.min(24, Math.max(4, value.split('\n').length + 2))} class="admin-mono">{value}</textarea>}
+              {kind === 'image' && (
+                <>
+                  <select id={name} name={name} data-preview={`prev_${key}`}>
+                    {media.map((m) => <option value={m.id} selected={m.id === value} data-src={mediaUrl(m.id, 320)}>{m.alt || m.filename}</option>)}
+                  </select>
+                  <img id={`prev_${key}`} class="admin-preview-img" alt="" src={mediaUrl(value, 320)} />
+                </>
+              )}
+              {b.help && <p class="admin-hint">{b.help}</p>}
+              {kind === 'markdown' && <p class="admin-hint">Blank line between paragraphs · <code>## </code> heading · <code>- </code> list item · <code>[text](https://…)</code> link · <code>**bold**</code></p>}
+              {edited.has(key) && (
+                <details class="admin-original">
+                  <summary>Original</summary>
+                  {kind === 'image' ? <p>{mediaName(b.default)}</p> : <pre>{b.default}</pre>}
+                </details>
+              )}
+            </div>
+          );
+        })}
+      </fieldset>
+    ))}
+    <div class="admin-actions admin-sticky"><button type="submit">Save changes</button><a href="/admin/pages">Cancel</a></div>
+  </form>
+
+  <script is:inline>
+    document.querySelectorAll('select[data-preview]').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const img = document.getElementById(sel.dataset.preview);
+        const src = sel.selectedOptions[0]?.dataset.src;
+        if (img && src) img.src = src;
+      });
+    });
+  </script>
+</AdminLayout>

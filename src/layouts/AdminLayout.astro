@@ -16,7 +16,7 @@ const NAV: { label: string; href: string | null }[] = [
   { label: 'Enquiries', href: '/admin/enquiries' },
   { label: 'Journal', href: '/admin/journal' },
   { label: 'Media', href: '/admin/media' },
-  { label: 'Pages', href: null },
+  { label: 'Pages', href: '/admin/pages' },
 ];
 ---
 <!doctype html>
@@ -131,6 +131,11 @@ const NAV: { label: string; href: string | null }[] = [
   .admin-media .admin-inline input { flex: 1; min-width: 0; }
   .admin-media form { margin: 0; }
   .admin-main button.admin-link-danger { background: none; color: #A0412D !important; padding: 0; text-transform: none; letter-spacing: 0; text-decoration: underline; }
+  .admin-tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 6px; background: #EFE6D6; color: var(--accent-text); vertical-align: middle; }
+  .admin-original { font-size: 13px; color: var(--text-muted); }
+  .admin-original summary { cursor: pointer; }
+  .admin-original pre { white-space: pre-wrap; font: inherit; margin: 6px 0 0; padding: 8px 10px; background: var(--surface-tint); }
+  .admin-sticky { position: sticky; bottom: 0; background: var(--surface-page); padding: 12px 0; border-top: 1px solid var(--border-hairline); }
   .admin-main textarea { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--color-soft-stone); width: 100%; box-sizing: border-box; }
   .admin-past summary { cursor: pointer; font-size: 14px; margin-bottom: 12px; }
   @media (max-width: 620px) {

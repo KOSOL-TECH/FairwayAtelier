@@ -1,0 +1,35 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { PAGES } from '../../../lib/pages';
+
+export const prerender = false;
+
+const { results } = await env.DB.prepare('SELECT page, count(*) AS n, max(updated_at) AS last FROM page_blocks GROUP BY page').all<{ page: string; n: number; last: string }>();
+const edits = new Map(results.map((r) => [r.page, r]));
+const saved = Astro.url.searchParams.get('saved');
+const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+---
+<AdminLayout title="Pages">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  <p class="admin-intro">
+    The text and images on each page. Edits go live as soon as you save. Every field shows its approved original,
+    so you can always put it back.
+  </p>
+  <table class="admin-table">
+    <thead><tr><th>Page</th><th>Fields</th><th>Edited</th><th></th></tr></thead>
+    <tbody>
+      {PAGES.map((p) => {
+        const e = edits.get(p.id);
+        return (
+          <tr>
+            <td><a href={`/admin/pages/${p.id}`}>{p.label}</a></td>
+            <td>{Object.keys(p.blocks).length}</td>
+            <td>{e ? `${e.n} field${e.n === 1 ? '' : 's'}, last ${when(e.last)}` : '—'}</td>
+            <td><a href={p.path} target="_blank" rel="noopener">View</a></td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</AdminLayout>
