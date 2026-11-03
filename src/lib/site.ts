@@ -54,7 +54,7 @@ export const FOOTER_LEGAL = [
   ['Cookies', '/cookies'],
 ] as const;
 
-/** Sitemap entries; changefreq and priority as in the prototype's sitemap.xml. */
+/** Sitemap entries; changefreq and priority as in the prototype's sitemap.xml. Published journal articles are added from D1 (src/pages/sitemap.xml.ts). */
 export const SITEMAP: ReadonlyArray<{ path: string; changefreq: string; priority: string }> = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/experience', changefreq: 'monthly', priority: '0.8' },
@@ -63,9 +63,6 @@ export const SITEMAP: ReadonlyArray<{ path: string; changefreq: string; priority
   { path: '/availability', changefreq: 'weekly', priority: '0.9' },
   { path: '/private', changefreq: 'monthly', priority: '0.7' },
   { path: '/journal', changefreq: 'weekly', priority: '0.6' },
-  { path: '/journal/coast', changefreq: 'monthly', priority: '0.6' },
-  { path: '/journal/dining', changefreq: 'monthly', priority: '0.6' },
-  { path: '/journal/restore', changefreq: 'monthly', priority: '0.6' },
   { path: '/faq', changefreq: 'monthly', priority: '0.6' },
   { path: '/enquire', changefreq: 'monthly', priority: '0.9' },
   { path: '/mentions-legales', changefreq: 'yearly', priority: '0.2' },

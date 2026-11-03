@@ -1,0 +1,33 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { allArticles } from '../../../lib/articles';
+
+export const prerender = false;
+
+const articles = await allArticles(env.DB);
+const saved = Astro.url.searchParams.get('saved');
+---
+<AdminLayout title="Journal">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  <p class="admin-intro">
+    Published articles appear on <a href="/journal" target="_blank" rel="noopener">/journal</a> straight away, in the order
+    below; the one marked Featured gets the large card. Drafts stay hidden until you tick “Published”.
+  </p>
+  <p><a class="admin-button" href="/admin/journal/new">Write an article</a></p>
+
+  <table class="admin-table">
+    <thead><tr><th>Order</th><th>Title</th><th>Category</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {articles.map((a) => (
+        <tr>
+          <td>{a.sort_order}</td>
+          <td><a href={`/admin/journal/${a.slug}`}>{a.title}</a>{a.featured ? ' · Featured' : ''}</td>
+          <td>{a.kicker}</td>
+          <td>{a.published ? 'Published' : 'Draft'}</td>
+          <td>{a.published ? <a href={`/journal/${a.slug}`} target="_blank" rel="noopener">View</a> : ''}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>

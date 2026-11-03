@@ -1,47 +1,42 @@
 ---
-import { Image } from 'astro:assets';
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
+import MediaImage from '../../components/MediaImage.astro';
 import { META } from '../../lib/site';
-import imgDestination from '../../assets/img-destination.png';
-import imgHeritage from '../../assets/img-club-heritage.png';
-import imgDining from '../../assets/img-dining.png';
-import imgGolfBag from '../../assets/img-golf-bag.png';
-import imgArch from '../../assets/img-arch-lineart.png';
+import { publishedArticles, splitFeatured } from '../../lib/articles';
+
+// Rendered on each request from the articles published in /admin/journal.
+export const prerender = false;
 
 const [title, description] = META['/journal'];
-// These notes are not written yet, so the cards are not links (see README: open decisions).
-const featured = { img: imgDestination, cat: 'The Coast', title: 'Why we chose Brittany', excerpt: 'On the Emerald Coast, the golf, the table, and the sea are never more than a few minutes apart — and that proximity is the whole idea.' };
-const posts = [
-  { img: imgHeritage, cat: 'The Courses', title: 'A round at Dinard, France\'s second-oldest course', read: '5 min' },
-  { img: imgDining, cat: 'The Table', title: 'An afternoon with the Roellingers at Le Coquillage', read: '7 min' },
-  { img: imgGolfBag, cat: 'The Craft', title: 'What “no wallet” really takes to arrange', read: '4 min' },
-  { img: imgArch, cat: 'The Coast', title: 'Crossing to Mont-Saint-Michel, quietly', read: '6 min' },
-];
+const { featured, rest: posts } = splitFeatured(await publishedArticles(env.DB));
 ---
 <BaseLayout title={title} description={description}>
   <main id="main" class="sec" style="--max:1200px; --pt:0px; --pb:96px">
     <PageHero eyebrow="Journal" title="Notes from the coast"
       intro="Dispatches on the courses, the tables, and the craft of an effortless week — written by the team who arrange them." />
-    <article class="featured grid split-wide">
-      <Image src={featured.img} alt="" class="featured__img" widths={[600, 1200]} sizes="(max-width: 960px) 100vw, 600px" />
-      <div class="featured__body">
-        <div class="label">Featured · {featured.cat}</div>
-        <h2 class="display-sm">{featured.title}</h2>
-        <p>{featured.excerpt}</p>
-        <span class="read-more featured__more">Read the note</span>
-      </div>
-    </article>
+    {featured && (
+      <a href={`/journal/${featured.slug}`} class="featured grid split-wide">
+        {featured.hero && <MediaImage media={featured.hero} alt="" class="featured__img" sizes="(max-width: 960px) 100vw, 600px" />}
+        <div class="featured__body">
+          <div class="label">Featured · {featured.kicker}</div>
+          <h2 class="display-sm">{featured.title}</h2>
+          <p>{featured.excerpt}</p>
+          <span class="read-more featured__more">Read the note</span>
+        </div>
+      </a>
+    )}
     <div class="grid grid-2">
       {posts.map((p) => (
-        <article class="post">
-          <Image src={p.img} alt="" class="post__img" widths={[300, 600]} sizes="(max-width: 620px) 100vw, 150px" />
+        <a href={`/journal/${p.slug}`} class="post">
+          {p.hero && <MediaImage media={p.hero} alt="" class="post__img" sizes="(max-width: 620px) 100vw, 150px" />}
           <div class="post__body">
-            <div class="label">{p.cat}</div>
+            <div class="label">{p.kicker}</div>
             <h3>{p.title}</h3>
-            <div class="post__read">{p.read} read</div>
+            <div class="post__read">{p.read_time} read</div>
           </div>
-        </article>
+        </a>
       ))}
     </div>
   </main>
@@ -57,6 +52,8 @@ const posts = [
   .featured h2 { margin: 12px 0; }
   .featured p { font-size: 15px; margin: 0 0 18px; }
   .featured__more { font-size: 12px; }
+  .featured, .post { color: inherit; text-decoration: none; }
+  .featured:hover .read-more, .post:hover h3 { color: var(--accent-text); }
   .post {
     display: grid; grid-template-columns: 150px 1fr; align-items: stretch;
     border: 1px solid var(--border-hairline); background: var(--surface-card);

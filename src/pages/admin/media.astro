@@ -1,0 +1,111 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { logChange } from '../../lib/admin/audit';
+import {
+  ACCEPTED_TYPES, MAX_UPLOAD_BYTES, deleteMedia, getMedia, insertMedia, listMedia, mediaUrl, mediaUsage, updateAlt,
+} from '../../lib/media';
+
+export const prerender = false;
+
+const email = Astro.locals.adminEmail!;
+const back = (msg: string) => Astro.redirect(`/admin/media?saved=${encodeURIComponent(msg)}`, 303);
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = form.get('action');
+
+  if (action === 'upload') {
+    const file = form.get('file');
+    const alt = String(form.get('alt') ?? '').trim().slice(0, 300);
+    if (!(file instanceof File) || file.size === 0) error = 'Choose an image to upload.';
+    else if (!ACCEPTED_TYPES[file.type]) error = 'Upload a JPEG, PNG, WebP or AVIF image.';
+    else if (file.size > MAX_UPLOAD_BYTES) error = 'Images must be under 15 MB.';
+    else {
+      // Read the real dimensions; this also rejects files that are not images.
+      const info = await env.IMAGES.info(file.stream()).catch(() => null);
+      if (!info || !('width' in info)) error = 'That file could not be read as an image.';
+      else {
+        const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+        const key = `${id}.${ACCEPTED_TYPES[file.type]}`;
+        await env.MEDIA.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+        await insertMedia(env.DB, {
+          id, r2_key: key, filename: file.name.slice(0, 200), content_type: file.type, size: file.size,
+          width: info.width, height: info.height, alt, uploaded_by: email,
+        });
+        await logChange(env.DB, email, 'create', 'media', id, { filename: file.name });
+        return back(`${file.name} was uploaded.`);
+      }
+    }
+  } else {
+    const media = await getMedia(env.DB, String(form.get('id') ?? ''));
+    if (media && action === 'alt') {
+      const alt = String(form.get('alt') ?? '').trim().slice(0, 300);
+      await updateAlt(env.DB, media.id, alt);
+      await logChange(env.DB, email, 'update', 'media', media.id, { alt });
+      return back(`Description saved for ${media.filename}.`);
+    }
+    if (media && action === 'delete') {
+      const usage = await mediaUsage(env.DB, media.id);
+      if (usage.length) error = `${media.filename} is still used (${usage.join('; ')}). Choose another image there first.`;
+      else {
+        await deleteMedia(env.DB, env.MEDIA, media);
+        await logChange(env.DB, email, 'delete', 'media', media.id, { filename: media.filename });
+        return back(`${media.filename} was deleted.`);
+      }
+    }
+  }
+  if (error) Astro.response.status = 422;
+}
+
+const items = await listMedia(env.DB);
+const saved = Astro.url.searchParams.get('saved');
+const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
+---
+<AdminLayout title="Media">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  {error && <p class="admin-error" role="alert">{error}</p>}
+  <p class="admin-intro">
+    Images for the journal and the pages. Upload the largest good-quality version you have (up to 15 MB); the site
+    resizes it for each screen. The description is read aloud by screen readers and shown if the image cannot load.
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="admin-form">
+    <input type="hidden" name="action" value="upload" />
+    <fieldset>
+      <legend>Upload an image</legend>
+      <div class="admin-row">
+        <label for="file">Image (JPEG, PNG, WebP or AVIF)</label>
+        <input type="file" id="file" name="file" accept="image/jpeg,image/png,image/webp,image/avif" required />
+      </div>
+      <div class="admin-row">
+        <label for="alt">Description</label>
+        <input type="text" id="alt" name="alt" maxlength="300" placeholder="e.g. The 18th green at Golf de Dinard at sunset" />
+      </div>
+    </fieldset>
+    <div class="admin-actions"><button type="submit">Upload</button></div>
+  </form>
+
+  <h2>Library ({items.length})</h2>
+  <ul class="admin-media" role="list">
+    {items.map((m) => (
+      <li>
+        <img src={mediaUrl(m.id, 320)} alt="" width={m.width} height={m.height} loading="lazy" />
+        <p class="admin-hint">{m.filename} · {m.width}×{m.height} · {kb(m.size)}</p>
+        <form method="post" class="admin-inline">
+          <input type="hidden" name="action" value="alt" />
+          <input type="hidden" name="id" value={m.id} />
+          <label class="sr-only" for={`alt-${m.id}`}>Description of {m.filename}</label>
+          <input type="text" id={`alt-${m.id}`} name="alt" value={m.alt} maxlength="300" placeholder="Description" />
+          <button type="submit">Save</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Delete this image permanently?')">
+          <input type="hidden" name="action" value="delete" />
+          <input type="hidden" name="id" value={m.id} />
+          <button type="submit" class="admin-link-danger">Delete</button>
+        </form>
+      </li>
+    ))}
+  </ul>
+</AdminLayout>

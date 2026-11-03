@@ -1,0 +1,31 @@
+---
+import { mediaUrl, snapWidth, srcset, type Media } from '../lib/media';
+
+/**
+ * A responsive <img> for a media library file (src/lib/media.ts). Extra
+ * attributes, including the caller's style-scope attribute, are passed through
+ * so the calling page's scoped CSS applies to the image.
+ */
+interface Props extends Record<string, unknown> {
+  media: Pick<Media, 'id' | 'width' | 'height' | 'alt'>;
+  sizes: string;
+  /** Overrides the library's alt text, e.g. "" for decorative use. */
+  alt?: string;
+  class?: string;
+  loading?: 'eager' | 'lazy';
+}
+
+const { media, sizes, alt = media.alt, class: className, loading = 'lazy', ...rest } = Astro.props;
+---
+<img
+  src={mediaUrl(media.id, Math.min(snapWidth(1000), media.width))}
+  srcset={srcset(media)}
+  sizes={sizes}
+  width={media.width}
+  height={media.height}
+  alt={alt}
+  class={className}
+  loading={loading}
+  decoding="async"
+  {...rest}
+/>

@@ -1,0 +1,147 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import {
+  allArticles, createArticle, deleteArticle, getArticle, parseArticleForm, renderMarkdown, updateArticle, validateArticle,
+  type ArticleErrors, type ArticleInput,
+} from '../../../lib/articles';
+import { listMedia, mediaUrl } from '../../../lib/media';
+
+export const prerender = false;
+
+/** /admin/journal/new writes an article; /admin/journal/<slug> edits one. */
+const isNew = Astro.params.slug === 'new';
+const existing = isNew ? null : await getArticle(env.DB, Astro.params.slug ?? '', { publishedOnly: false });
+if (!isNew && !existing) return Astro.redirect('/admin/journal', 303);
+
+const email = Astro.locals.adminEmail!;
+const back = (msg: string) => Astro.redirect(`/admin/journal?saved=${encodeURIComponent(msg)}`, 303);
+
+let article: ArticleInput = existing
+  ? { ...existing, featured: !!existing.featured, published: !!existing.published }
+  : { slug: '', sort_order: 20, eyebrow: '', kicker: '', title: '', excerpt: '', hero_media_id: null, lede: '', body: '', next_slug: null, featured: false, published: false };
+let errors: ArticleErrors = {};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('action') === 'delete' && existing) {
+    await deleteArticle(env.DB, existing.slug);
+    await logChange(env.DB, email, 'delete', 'article', existing.slug);
+    return back(`“${existing.title}” was deleted.`);
+  }
+  article = parseArticleForm(form);
+  errors = validateArticle(article);
+  if (Object.keys(errors).length === 0) {
+    if (existing ? await updateArticle(env.DB, existing.slug, article) : await createArticle(env.DB, article)) {
+      await logChange(env.DB, email, existing ? 'update' : 'create', 'article', article.slug, {
+        published: article.published,
+        ...(existing && existing.slug !== article.slug && { slug: [existing.slug, article.slug] }),
+      });
+      if (form.get('action') === 'save-stay') return Astro.redirect(`/admin/journal/${article.slug}?saved=1`, 303);
+      return back(`“${article.title}” was saved${article.published ? ' and is live' : ' as a draft'}.`);
+    }
+    errors.slug = 'Another article already uses this web address.';
+  }
+  Astro.response.status = 422;
+}
+
+const [media, others] = await Promise.all([listMedia(env.DB), allArticles(env.DB)]);
+const nextOptions = others.filter((o) => o.slug !== (existing?.slug ?? article.slug));
+const savedHere = Astro.url.searchParams.get('saved') === '1';
+const field = (name: keyof ArticleInput) => ({ name, id: name, 'aria-invalid': errors[name] ? ('true' as const) : undefined });
+const title = isNew ? 'Write an article' : `Edit “${existing!.title}”`;
+---
+<AdminLayout title={title}>
+  <p><a href="/admin/journal">← All articles</a>{existing?.published ? <> · <a href={`/journal/${existing.slug}`} target="_blank" rel="noopener">View on the site</a></> : ''}</p>
+  {savedHere && <p class="admin-flash" role="status">Saved.</p>}
+  {Object.keys(errors).length > 0 && <p class="admin-error" role="alert">Please check the highlighted fields.</p>}
+
+  <form method="post" class="admin-form admin-form--wide" novalidate>
+    <fieldset>
+      <legend>Headline</legend>
+      <div class="admin-row"><label for="title">Title</label><input type="text" {...field('title')} value={article.title} maxlength="200" required />{errors.title && <p class="admin-field-error">{errors.title}</p>}</div>
+      <div class="admin-row"><label for="kicker">Category</label><input type="text" {...field('kicker')} value={article.kicker} maxlength="60" placeholder="e.g. The Golf" />{errors.kicker && <p class="admin-field-error">{errors.kicker}</p>}<p class="admin-hint">Shown on the cards, and as the “Continue reading” link from other articles.</p></div>
+      <div class="admin-row"><label for="eyebrow">Line above the title</label><input type="text" {...field('eyebrow')} value={article.eyebrow} maxlength="120" placeholder="e.g. Our USP · The Golf" />{errors.eyebrow && <p class="admin-field-error">{errors.eyebrow}</p>}</div>
+      <div class="admin-row">
+        <label for="slug">Web address</label>
+        <input type="text" {...field('slug')} value={article.slug} maxlength="80" placeholder="Leave empty to make one from the title" />
+        {errors.slug && <p class="admin-field-error">{errors.slug}</p>}
+        <p class="admin-hint">fairwayatelier.com/journal/<strong>{article.slug || '…'}</strong>. Changing it breaks links people may have saved.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Image</legend>
+      <div class="admin-row">
+        <label for="hero_media_id">Main image</label>
+        <select {...field('hero_media_id')}>
+          <option value="">— None —</option>
+          {media.map((m) => <option value={m.id} selected={m.id === article.hero_media_id} data-src={mediaUrl(m.id, 320)}>{m.alt || m.filename}</option>)}
+        </select>
+        {errors.hero_media_id && <p class="admin-field-error">{errors.hero_media_id}</p>}
+        <img id="hero-preview" class="admin-preview-img" alt="" hidden={!article.hero_media_id}
+          src={article.hero_media_id ? mediaUrl(article.hero_media_id, 320) : undefined} />
+        <p class="admin-hint">Add new images in <a href="/admin/media" target="_blank" rel="noopener">Media</a>, then reload this page.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Text</legend>
+      <div class="admin-row"><label for="excerpt">Card text</label><textarea {...field('excerpt')} rows="2" maxlength="400">{article.excerpt}</textarea>{errors.excerpt && <p class="admin-field-error">{errors.excerpt}</p>}<p class="admin-hint">One or two sentences for the featured card on /journal.</p></div>
+      <div class="admin-row"><label for="lede">Opening paragraph</label><textarea {...field('lede')} rows="3" maxlength="1000">{article.lede}</textarea>{errors.lede && <p class="admin-field-error">{errors.lede}</p>}<p class="admin-hint">Shown large and in italics under the image.</p></div>
+      <div class="admin-row">
+        <label for="body">Article</label>
+        <textarea {...field('body')} rows="18" class="admin-mono">{article.body}</textarea>
+        {errors.body && <p class="admin-field-error">{errors.body}</p>}
+        <p class="admin-hint">Leave a blank line between paragraphs. Start a line with <code>## </code> for a heading and <code>&gt; </code> for a large pull quote. <code>**bold**</code>, <code>*italic*</code>.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Publishing</legend>
+      <div class="admin-row">
+        <label for="next_slug">“Continue reading” links to</label>
+        <select {...field('next_slug')}>
+          <option value="">— Nothing —</option>
+          {nextOptions.map((o) => <option value={o.slug} selected={o.slug === article.next_slug}>{o.title}{o.published ? '' : ' (draft)'}</option>)}
+        </select>
+        {errors.next_slug && <p class="admin-field-error">{errors.next_slug}</p>}
+      </div>
+      <div class="admin-row"><label for="sort_order">Order on /journal</label><input type="number" {...field('sort_order')} value={article.sort_order} step="1" class="admin-narrow" /><p class="admin-hint">Lower numbers come first.</p></div>
+      <div class="admin-row"><label class="admin-check"><input type="checkbox" name="featured" checked={article.featured} /> Featured (large card at the top of /journal)</label></div>
+      <div class="admin-row"><label class="admin-check"><input type="checkbox" name="published" checked={article.published} /> Published</label></div>
+    </fieldset>
+
+    <div class="admin-actions">
+      <button type="submit" name="action" value="save">Save</button>
+      <button type="submit" name="action" value="save-stay" class="admin-secondary">Save and keep editing</button>
+      <a href="/admin/journal">Cancel</a>
+    </div>
+  </form>
+
+  {existing?.body && (
+    <section class="admin-preview">
+      <h2>Preview of the saved article</h2>
+      <p class="admin-preview-lede">{existing.lede}</p>
+      <div class="admin-preview-body" set:html={renderMarkdown(existing.body)} />
+    </section>
+  )}
+
+  {existing && (
+    <form method="post" class="admin-danger" onsubmit="return confirm('Delete this article permanently?')">
+      <input type="hidden" name="action" value="delete" />
+      <button type="submit">Delete this article</button>
+    </form>
+  )}
+
+  <script is:inline>
+    const sel = document.getElementById('hero_media_id');
+    const img = document.getElementById('hero-preview');
+    sel?.addEventListener('change', () => {
+      const src = sel.selectedOptions[0]?.dataset.src;
+      img.hidden = !src;
+      if (src) img.src = src;
+    });
+  </script>
+</AdminLayout>

@@ -14,7 +14,8 @@ const NAV: { label: string; href: string | null }[] = [
   { label: 'Overview', href: '/admin' },
   { label: 'Weeks', href: '/admin/weeks' },
   { label: 'Enquiries', href: '/admin/enquiries' },
-  { label: 'Journal', href: null },
+  { label: 'Journal', href: '/admin/journal' },
+  { label: 'Media', href: '/admin/media' },
   { label: 'Pages', href: null },
 ];
 ---
@@ -61,7 +62,7 @@ const NAV: { label: string; href: string | null }[] = [
   }
   .admin-bar a { color: inherit; text-decoration: none; }
   .admin-bar a:hover, .admin-bar a[aria-current='page'] { text-decoration: underline; text-underline-offset: 4px; }
-  .admin-brand { font-family: var(--font-serif); font-size: 20px; }
+  .admin-brand { font-family: var(--font-display); font-size: 20px; }
   .admin-brand span { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; margin-left: 6px; }
   .admin-bar nav { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; }
   .admin-bar .soon { opacity: 0.55; cursor: default; }
@@ -70,8 +71,8 @@ const NAV: { label: string; href: string | null }[] = [
   .admin-user button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
   .admin-user button:hover { text-decoration: underline; text-underline-offset: 4px; }
   .admin-main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; font-family: var(--font-sans); }
-  .admin-main h1 { font-family: var(--font-serif); color: var(--text-heading); font-weight: 400; font-size: 36px; margin: 0 0 24px; }
-  .admin-main h2 { font-family: var(--font-serif); color: var(--text-heading); font-weight: 400; font-size: 24px; margin: 40px 0 12px; }
+  .admin-main h1 { font-family: var(--font-display); color: var(--text-heading); font-weight: 400; font-size: 36px; margin: 0 0 24px; }
+  .admin-main h2 { font-family: var(--font-display); color: var(--text-heading); font-weight: 400; font-size: 24px; margin: 40px 0 12px; }
   .admin-table { width: 100%; border-collapse: collapse; background: var(--surface-card); font-size: 14px; }
   .admin-table th, .admin-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-hairline); vertical-align: top; }
   .admin-table th { color: var(--text-heading); font-weight: 600; }
@@ -97,7 +98,7 @@ const NAV: { label: string; href: string | null }[] = [
   .admin-main [aria-invalid='true'] { border-color: #A0412D; }
   .admin-form { max-width: 640px; display: grid; gap: 20px; }
   .admin-form fieldset { border: 1px solid var(--border-hairline); background: var(--surface-card); padding: 16px 20px 4px; margin: 0; }
-  .admin-form legend { font-family: var(--font-serif); font-size: 20px; color: var(--text-heading); padding: 0 6px; }
+  .admin-form legend { font-family: var(--font-display); font-size: 20px; color: var(--text-heading); padding: 0 6px; }
   .admin-row { display: grid; gap: 6px; margin-bottom: 16px; }
   .admin-row label { font-size: 14px; font-weight: 600; color: var(--text-heading); }
   .admin-row input[type='text'] { width: 100%; box-sizing: border-box; }
@@ -116,6 +117,20 @@ const NAV: { label: string; href: string | null }[] = [
   .admin-detail { max-width: 720px; margin-bottom: 16px; }
   .admin-detail th { width: 180px; }
   .admin-detail td { white-space: pre-wrap; }
+  .admin-form--wide { max-width: 860px; }
+  .admin-mono { font-family: ui-monospace, Consolas, monospace !important; font-size: 14px !important; line-height: 1.5; }
+  .admin-narrow { width: 90px; font: inherit; padding: 8px 10px; border: 1px solid var(--color-soft-stone); }
+  .admin-main button.admin-secondary { background: none; color: var(--text-accent) !important; border: 1px solid currentColor; }
+  .admin-preview-img { width: 200px; height: auto; border: 1px solid var(--border-hairline); }
+  .admin-preview { max-width: 720px; margin-top: 40px; padding: 24px; background: var(--surface-card); border: 1px solid var(--border-hairline); }
+  .admin-preview-lede { font-family: var(--font-display); font-size: 20px; font-style: italic; color: var(--text-heading); }
+  .admin-preview-body :global(blockquote) { border-left: 2px solid var(--accent); margin: 16px 0; padding-left: 20px; font-family: var(--font-display); font-size: 20px; font-style: italic; }
+  .admin-media { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .admin-media li { background: var(--surface-card); border: 1px solid var(--border-hairline); padding: 12px; display: grid; gap: 8px; }
+  .admin-media img { width: 100%; height: 160px; object-fit: cover; background: var(--surface-tint); }
+  .admin-media .admin-inline input { flex: 1; min-width: 0; }
+  .admin-media form { margin: 0; }
+  .admin-main button.admin-link-danger { background: none; color: #A0412D !important; padding: 0; text-transform: none; letter-spacing: 0; text-decoration: underline; }
   .admin-main textarea { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--color-soft-stone); width: 100%; box-sizing: border-box; }
   .admin-past summary { cursor: pointer; font-size: 14px; margin-bottom: 12px; }
   @media (max-width: 620px) {

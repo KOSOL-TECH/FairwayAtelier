@@ -23,7 +23,7 @@ npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangl
 | `src/components/ui/` | Design-system components (same props as `prototype/components`) |
 | `src/components/islands/` | React islands: `CookieConsent`, `EnquiryForm`, `JourneyTiers`, `Testimonials` |
 | `src/lib/weeks.ts` | Opened weeks, stored in D1 and edited at `/admin/weeks`: feeds `/availability`, the Home preview and the enquiry date options |
-| `src/content/journal/*.md` | The three journal articles |
+| `src/lib/articles.ts`, `src/lib/media.ts` | Journal articles and the media library, stored in D1 and R2 and edited at `/admin/journal` and `/admin/media` |
 | `src/styles/` | Tokens (copied from the prototype), fonts, base, layout primitives, component CSS |
 | `src/lib/site.ts` | Per-route META, nav, sitemap entries, TravelAgency JSON-LD, Atout France number |
 | `src/lib/enquiry/` | Shared validation, the sink interface, rate limit |
@@ -34,7 +34,8 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 ## Editing content
 
 - **Availability:** in the admin at `/admin/weeks`; changes are live at once. `/availability` and `/enquire` render on each request, and the Home list is a server island (`src/components/Departures.astro`, `server:defer`), so Home itself stays prerendered. Only published weeks whose first day has not passed (Paris time) are shown. Weeks marked for Home appear there. Every shown week that is not `sold` becomes an option in the enquiry form, and the server validates against the same list.
-- **Articles:** edit `src/content/journal/<slug>.md`. A `>` blockquote in the body renders as the pull quote.
+- **Articles:** in the admin at `/admin/journal` (Markdown body; a `>` blockquote renders as the pull quote; raw HTML is shown as text). `/journal`, `/journal/<slug>` and `/sitemap.xml` render on each request, so published articles appear at once. Unknown or draft slugs get the site's 404 page (`src/lib/not-found.ts`).
+- **Images:** upload at `/admin/media`. Files live in the R2 bucket `fairway-atelier-media` (binding `MEDIA`) and are served from `/media/<id>?w=<width>`, resized and converted to AVIF/WebP by the Images binding (`IMAGES`) and cached at the edge. Only six widths are allowed (`WIDTHS` in `src/lib/media.ts`), which keeps resizing inside the 5,000 free transformations a month. Use `src/components/MediaImage.astro` to show one.
 
 ## Admin
 

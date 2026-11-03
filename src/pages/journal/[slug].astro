@@ -1,20 +1,21 @@
 ---
-import { Image } from 'astro:assets';
-import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { Eyebrow } from '../../components/ui/Eyebrow';
 import { Divider } from '../../components/ui/Divider';
 import { Button } from '../../components/ui/Button';
+import MediaImage from '../../components/MediaImage.astro';
 import { SITE_URL, canonical } from '../../lib/site';
+import { getArticle, renderMarkdown } from '../../lib/articles';
+import { mediaUrl } from '../../lib/media';
+import { notFound } from '../../lib/not-found';
 
-export async function getStaticPaths() {
-  const entries = await getCollection('journal');
-  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
-}
+// Rendered on each request from the articles edited in /admin/journal.
+export const prerender = false;
 
-const { entry } = Astro.props as { entry: CollectionEntry<'journal'> };
-const a = entry.data;
-const { Content } = await render(entry);
+const a = await getArticle(env.DB, Astro.params.slug ?? '');
+if (!a) return notFound(Astro.url);
+const html = renderMarkdown(a.body);
 const title = `${a.title} — Fairway Atelier`;
 
 const articleLd = {
@@ -22,8 +23,9 @@ const articleLd = {
   '@type': 'Article',
   headline: a.title,
   description: a.lede,
-  image: new URL(a.hero.src, SITE_URL).href,
-  mainEntityOfPage: canonical(`/journal/${entry.id}`),
+  ...(a.hero && { image: new URL(mediaUrl(a.hero.id, 1280), SITE_URL).href }),
+  mainEntityOfPage: canonical(`/journal/${a.slug}`),
+  dateModified: a.updated_at,
   author: { '@type': 'Organization', name: 'Fairway Atelier' },
   publisher: { '@type': 'Organization', name: 'Fairway Atelier', logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.png` } },
 };
@@ -37,21 +39,23 @@ const articleLd = {
       <h1 class="display-lg">{a.title}</h1>
     </section>
     <section class="sec" style="--max:1000px; --pt:0px; --pb:0px">
-      <Image src={a.hero} alt={a.kicker} class="hero" widths={[640, 1000, 2000]} sizes="(max-width: 1000px) 100vw, 920px" loading="eager" />
+      {a.hero && <MediaImage media={a.hero} class="hero" sizes="(max-width: 1000px) 100vw, 920px" loading="eager" />}
     </section>
     <section class="sec" style="--max:720px; --pt:48px; --pb:0px">
       <p class="lede">{a.lede}</p>
     </section>
     <article class="sec prose" style="--max:720px; --pt:40px; --pb:8px">
-      <Content />
+      <Fragment set:html={html} />
     </article>
     <section class="sec" style="--max:720px; --pt:24px; --pb:24px">
       <Divider ornament tone="brass" style={{ maxWidth: 220, margin: '0 auto' }} />
     </section>
-    <section class="sec center" style="--pt:8px; --pb:40px">
-      <div class="label label--11 label--muted continue">Continue reading</div>
-      <a href={`/journal/${a.next}`} class="next">{a.nextLabel} →</a>
-    </section>
+    {a.next_slug && a.next_label && (
+      <section class="sec center" style="--pt:8px; --pb:40px">
+        <div class="label label--11 label--muted continue">Continue reading</div>
+        <a href={`/journal/${a.next_slug}`} class="next">{a.next_label} →</a>
+      </section>
+    )}
     <section class="band band--inverse center" style="--max:620px; --pt:72px; --pb:72px">
       <div class="inner">
         <h2 class="display-md on-dark cta__title">Begin your week in Brittany</h2>
