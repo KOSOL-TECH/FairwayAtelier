@@ -4,5 +4,6 @@ Disallow: /mentions-legales
 Disallow: /privacy
 Disallow: /terms
 Disallow: /cookies
+Disallow: /admin
 
 Sitemap: https://fairwayatelier.com/sitemap.xml

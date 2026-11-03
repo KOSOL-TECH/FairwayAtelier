@@ -9,7 +9,10 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 | Approach | Custom admin in the same Worker (not a Git-based or hosted CMS), so edits go live without a rebuild and the CRM can share the same database and sign-in. |
 | First version | Availability weeks, journal articles, page copy and images, enquiries inbox. |
 | Week scheduling | Manual status per week (booking / limited / sold / waitlist). No capacity counts or timed release for now. |
-| Users | A few named people, all with the same rights. No roles. |
+| Users | A few named people, all with the same rights. No roles. For now only atelier@fairwayatelier.com (D-11). |
+| Images | Resized by Cloudflare Images transformations (D-12). |
+| Enquiry retention | Enquiries with no booking are deleted 3 years after the last contact (D-13, counsel to confirm). |
+| Copy edits | Go live on save, with no sign-off step (D-14). |
 
 ## Architecture
 
@@ -19,6 +22,14 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 - **Admin UI:** Astro pages under `src/pages/admin/` with React islands, rendered on demand, `noindex`, and left out of the sitemap and `robots.txt`. It reuses the site's tokens and fonts.
 - **Public pages:** pages that show managed content switch from build-time prerendering to on-demand rendering from D1, with an edge cache that is purged when an editor saves. Static pages with no managed content stay prerendered.
 - **Enquiries:** a new `D1Sink` in `getEnquirySinks()` stores each enquiry before the emails go out. The inbox lists enquiries with a status (new / replied / closed) and notes. This becomes the CRM's base.
+
+## Working on the admin
+
+- **Code:** `src/middleware.ts` guards `/admin` and `/api/admin`; `src/lib/admin/` holds the Access check and the audit log; pages are in `src/pages/admin/` (each with `export const prerender = false`) and use `src/layouts/AdminLayout.astro`.
+- **Locally:** run `npx wrangler d1 migrations apply DB --local` once, then `npm run dev` and open `/admin`. There is no Access locally, so you are signed in as `dev@localhost`. `npm run preview` runs the production build, where `/admin` returns 403 without Access.
+- **Schema changes:** add `migrations/000N_name.sql`, apply it locally, then run `npx wrangler d1 migrations apply DB --remote` before pushing code that needs it. Workers Builds does not apply migrations.
+- **Access settings:** `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc` `vars`. While either is empty, every admin request is refused.
+- **Adding a user:** add their email to the Access policy "Admin users" (Zero Trust → Access → Applications → Fairway Atelier Admin).
 
 ## Data model (first version)
 
@@ -31,7 +42,7 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 
 ## Phases
 
-1. **Foundation (T-21):** D1, R2, Access, JWT check, admin shell, audit log, seeded from today's content files.
+1. **Foundation (T-21):** D1, Access, JWT check, admin shell, audit log. R2 moves to phase 4, and each phase seeds its own data.
 2. **Availability weeks (T-22):** editor; `/availability`, the Home preview and the enquiry form's date options read from D1. Past weeks hidden from the site automatically (based on the start date, not a scheduled release).
 3. **Enquiries inbox (T-23):** `D1Sink`, list and detail views, status and notes. Needs the privacy policy to name the retention period (D-13).
 4. **Journal articles and media (T-24):** article editor with Markdown preview; image uploads to R2.

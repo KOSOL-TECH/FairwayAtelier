@@ -10,10 +10,6 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Decision | Notes |
 |---|---|---|
-| D-11 | Who gets admin access | The email addresses allowed to sign in to `/admin` (Cloudflare Access, one-time code by email). Needed for T-21. |
-| D-12 | Images uploaded through the admin | Serve uploads as they are (the editor must upload web-sized files), or resize them with Cloudflare Images transformations (5,000 unique transformations/month free, then $0.50 per 1,000). Needed for T-24. |
-| D-13 | Enquiry retention period | Storing enquiries in the admin (T-23) means the privacy policy must state how long they are kept (it already has a `[XX] months` placeholder, T-08). Pick the period; the admin can then delete older enquiries automatically. |
-| D-14 | Editing approved copy | Once page copy is editable (T-25), the client can change copy that is today "approved verbatim". Confirm that editors may do so without a separate sign-off. |
 | D-03 | Analytics provider | Plausible, Fathom or Matomo. No Google Analytics. Already gated behind consent; only `PUBLIC_ANALYTICS_SRC` / `PUBLIC_ANALYTICS_DOMAIN` need setting. |
 | D-04 | Journal cards without articles | The featured "Why we chose Brittany" and the four post cards on `/journal` have no articles behind them and are not links. Write them, link them to the existing three articles, or remove them. |
 | D-05 | Legal pages in robots.txt vs sitemap | `robots.txt` disallows the four legal pages, but the sitemap lists them (both as in the prototype). Recommendation: drop them from the sitemap. |
@@ -25,11 +21,10 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 | ID | Task | Owner | Blocked by | Notes |
 |---|---|---|---|---|
-| T-21 | Admin foundation | Dev | D-11 | See `docs/admin.md`. D1 (`DB`) + R2 (`MEDIA`) bindings, migrations, Cloudflare Access on `/admin*` and `/api/admin/*` with a Worker-side JWT check, admin shell, audit log, seed from today's content files. |
 | T-22 | Admin: availability weeks | Dev | T-21 | Editor for weeks (status, tiers, dining, featured, order, published). `/availability`, the Home preview and the enquiry form's dates read from D1, cached at the edge and purged on save. Past weeks drop off the site by start date. |
-| T-23 | Admin: enquiries inbox | Dev | T-21, D-13 | `D1Sink` stores every enquiry; list and detail, status (new / replied / closed), notes, automatic deletion after the retention period. Base for the CRM. |
-| T-24 | Admin: journal articles and media | Dev | T-21, D-12 | Article editor (Markdown with preview), R2 uploads, alt text required. Resolves D-04 once the client writes the missing articles. |
-| T-25 | Admin: page copy and images | Dev | T-24, D-14 | Keyed copy and image blocks for every page, seeded with today's approved copy, edited on a page preview. |
+| T-23 | Admin: enquiries inbox | Dev | T-21 | `D1Sink` stores every enquiry; list and detail, status (new / replied / closed), notes, automatic deletion of enquiries with no booking 3 years after the last contact (D-13); booked guests are kept separately once the CRM exists (T-05). Update the privacy policy's retention sentence to match. Base for the CRM. |
+| T-24 | Admin: journal articles and media | Dev | T-21 | Resize uploads with Cloudflare Images transformations (D-12): switch transformations on for the zone and serve `srcset` sizes. Needs R2 switched on first (dashboard → R2, accept the terms; `wrangler r2 bucket create` answered "Please enable R2", code 10042), then bucket `fairway-atelier-media` and the `MEDIA` binding. Article editor (Markdown with preview), R2 uploads, alt text required. Resolves D-04 once the client writes the missing articles. |
+| T-25 | Admin: page copy and images | Dev | T-24 | Edits publish immediately, with no sign-off step (D-14). Keyed copy and image blocks for every page, seeded with today's approved copy, edited on a page preview. |
 | T-05 | CRM in the admin | Dev | T-23 | Client decision 2026-11-03: build the CRM into the admin tool, not a third-party vendor (was D-02). Scope to be agreed after T-23. |
 | T-06 | Wire up analytics | Dev | D-03 | Set env vars; update the cookie policy's cookie table. |
 | T-07 | Add Turnstile to the enquiry form | Dev | D-06 | Client widget + server-side Siteverify in `/api/enquiry`. |
@@ -41,13 +36,19 @@ Single source of truth for all Fairway Atelier work. **Every agent and contribut
 
 ## In progress
 
-_Nothing in progress._
+| ID | Task | Owner | Blocked by | Notes |
+|---|---|---|---|---|
+| T-21 | Admin foundation | Client + Dev | Access | Claude Code session 2026-11-03. See `docs/admin.md`. Done: D1 database `fairway-atelier` (binding `DB`, migration 0001 applied locally and remote), `src/middleware.ts` + Access JWT check (`src/lib/admin/access.ts`, 11 tests), audit log, admin shell at `/admin`, `/admin` in robots.txt. Deployed locked: `/admin` returns 403 while `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD` are empty. Waiting on the client to enable Cloudflare Access (Zero Trust dashboard → Enable Access, pick a team name, Free plan); the API answers "Access is not enabled". Then Dev creates the Access app (fairwayatelier.com/admin and /api/admin, one-time PIN, allow atelier@), sets the two vars, deploys and tests sign-in. |
 
 ## Decisions recorded
 
 | ID | Decision | Answer |
 |---|---|---|
 | D-01 | Transactional email provider | 2026-11-01: Cloudflare Email Sending (binding `EMAIL`, no API key). |
+| D-11 | Who gets admin access | 2026-11-03: atelier@fairwayatelier.com only, for now. |
+| D-12 | Images uploaded through the admin | 2026-11-03: resize with Cloudflare Images transformations (5,000 unique transformations/month free, then $0.50 per 1,000). |
+| D-13 | Enquiry retention period | 2026-11-03: client asked for "as long as legally possible". GDPR requires a fixed period, so this is recorded as the CNIL guideline for prospects: 3 years after the last contact. Guests who book are kept under the contract and accounting rules. French counsel to confirm during T-08. |
+| D-14 | Editing approved copy | 2026-11-03: no sign-off needed; edits go live as soon as they are saved. This replaces the "approved verbatim" rule for content managed in the admin. |
 | D-02 | CRM vendor | 2026-11-03: none. The CRM will be built into the Fairway Atelier admin (T-05). |
 | — | Content management | 2026-11-03: custom admin on Cloudflare (D1, R2, Access) covering weeks, journal, page copy and images, enquiries inbox. Weeks use manual status only. A few named users, no roles. Design in `docs/admin.md`. |
 | D-10 | Upgrade to the Workers Paid plan ($5/month) | 2026-11-01: upgraded. Needed for Email Sending to reach guests; includes 3,000 emails/month, then $0.35 per 1,000. |

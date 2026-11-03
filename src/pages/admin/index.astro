@@ -1,0 +1,43 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { recentChanges } from '../../lib/admin/audit';
+
+export const prerender = false;
+
+const changes = await recentChanges(env.DB, 20);
+const when = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+
+const SECTIONS = [
+  { title: 'Weeks', text: 'Open, limited, sold and waitlist weeks for /availability, Home and the enquiry form.', phase: 'Next' },
+  { title: 'Enquiries', text: 'Every enquiry from the website, with status and notes. The start of the CRM.', phase: 'Coming soon' },
+  { title: 'Journal', text: 'Articles and their images.', phase: 'Coming soon' },
+  { title: 'Pages', text: 'Copy and images on every page.', phase: 'Coming soon' },
+];
+---
+<AdminLayout title="Overview">
+  <div class="admin-cards">
+    {SECTIONS.map((s) => (
+      <div class="admin-card">
+        <h3>{s.title}</h3>
+        <p>{s.text}</p>
+        <p><em>{s.phase}</em></p>
+      </div>
+    ))}
+  </div>
+
+  <h2>Recent changes</h2>
+  {changes.length === 0 ? (
+    <p class="admin-empty">No changes yet.</p>
+  ) : (
+    <table class="admin-table">
+      <thead><tr><th>When (Paris)</th><th>Who</th><th>Change</th></tr></thead>
+      <tbody>
+        {changes.map((c) => (
+          <tr><td>{when(c.at)}</td><td>{c.email}</td><td>{c.action} {c.entity} {c.entity_id}</td></tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</AdminLayout>

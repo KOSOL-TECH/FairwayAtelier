@@ -36,6 +36,10 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 - **Availability:** edit `src/content/availability.json`. `status` is one of `booking | limited | sold | waitlist`. Weeks with `featured: true` appear on Home. Every week that is not `sold` becomes an option in the enquiry form (server validation uses the same list).
 - **Articles:** edit `src/content/journal/<slug>.md`. A `>` blockquote in the body renders as the pull quote.
 
+## Admin
+
+`/admin` is the private content tool (Cloudflare Access sign-in, D1 database). See [admin.md](admin.md) for its design, local setup and migrations.
+
 ## Enquiry endpoint
 
 `POST /api/enquiry` (JSON) validates with the same rules as the form and rejects a filled honeypot (`company`) silently. It also rate-limits to 5 requests per 60 seconds per IP through the Workers rate-limiting binding `ENQUIRY_LIMITER` (`wrangler.jsonc`). Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. They are, in order:

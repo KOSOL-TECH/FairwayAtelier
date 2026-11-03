@@ -25,6 +25,22 @@
   "send_email": [
     { "name": "EMAIL", "allowed_sender_addresses": ["atelier@fairwayatelier.com"] }
   ],
+  // Admin data (docs/admin.md). Schema changes are SQL files in migrations/:
+  // npx wrangler d1 migrations apply DB --remote
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fairway-atelier",
+      "database_id": "dc7c4b90-b24e-4196-b4df-9c98e288af32",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Cloudflare Access for /admin: the Zero Trust team domain and the Access
+  // application's AUD tag. While either is empty, every admin request is refused.
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
   // Custom domains. Cloudflare creates the DNS records and certificates;
   // the hostnames must not have other DNS records.
   "routes": [
