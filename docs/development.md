@@ -38,7 +38,7 @@ Everything except `/api/enquiry` is prerendered to static HTML. Only the header 
 
 ## Admin
 
-`/admin` is the private content tool (Cloudflare Access sign-in, D1 database). See [admin.md](admin.md) for its design, local setup and migrations.
+`/admin` is the private content tool (email and password sign-in, D1 database). See [admin.md](admin.md) for its design, local setup and migrations.
 
 ## Enquiry endpoint
 

@@ -18,19 +18,18 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 
 - **Data:** Cloudflare D1 (SQLite), binding `DB`. Schema changes are numbered SQL files in `migrations/`, applied with `npx wrangler d1 migrations apply`.
 - **Media:** Cloudflare R2, binding `MEDIA`. Uploads are served from `/media/<key>`, with long cache headers. Resizing for responsive images is open (D-12).
-- **Sign-in:** a Cloudflare Access application covers `/admin*` and `/api/admin/*`. Users sign in with a one-time code emailed to them (free up to 50 users). The Worker also verifies the `Cf-Access-Jwt-Assertion` header against the team's public keys, so a misconfigured Access policy cannot expose the admin. The signed-in email is recorded on every change (`audit_log` table).
+- **Sign-in:** email and password at `/admin/login` (client request 2026-11-03, replacing Cloudflare Access, whose emailed codes did not arrive). Passwords are stored only as PBKDF2-SHA256 hashes (100,000 iterations, per-user salt) in `admin_users`. A successful sign-in sets a `__Host-` session cookie (HttpOnly, Secure, SameSite=Strict, 12 hours) signed with HMAC using the `SESSION_SECRET` Worker secret. Attempts are rate-limited to 5 per minute per IP (`LOGIN_LIMITER`). Unknown emails take as long to check as known ones. Astro's origin check refuses cross-site form posts. The signed-in email is recorded on every change (`audit_log` table).
 - **Admin UI:** Astro pages under `src/pages/admin/` with React islands, rendered on demand, `noindex`, and left out of the sitemap and `robots.txt`. It reuses the site's tokens and fonts.
 - **Public pages:** pages that show managed content switch from build-time prerendering to on-demand rendering from D1, with an edge cache that is purged when an editor saves. Static pages with no managed content stay prerendered.
 - **Enquiries:** a new `D1Sink` in `getEnquirySinks()` stores each enquiry before the emails go out. The inbox lists enquiries with a status (new / replied / closed) and notes. This becomes the CRM's base.
 
 ## Working on the admin
 
-- **Code:** `src/middleware.ts` guards `/admin` and `/api/admin`; `src/lib/admin/` holds the Access check and the audit log; pages are in `src/pages/admin/` (each with `export const prerender = false`) and use `src/layouts/AdminLayout.astro`.
-- **Locally:** run `npx wrangler d1 migrations apply DB --local` once, then `npm run dev` and open `/admin`. There is no Access locally, so you are signed in as `dev@localhost`. `npm run preview` runs the production build, where `/admin` returns 403 without Access.
+- **Code:** `src/middleware.ts` guards `/admin` and `/api/admin`. `src/lib/admin/` holds password hashing, sessions, the login check and the audit log. Pages are in `src/pages/admin/` (each with `export const prerender = false`) and use `src/layouts/AdminLayout.astro`, except the standalone `login.astro`.
+- **Adding a user or changing a password:** `node scripts/set-admin-password.mjs <email>` (add `--local` for the local database). It asks for the password twice, hidden, needs at least 12 characters, and sends only the hash to D1. To remove a user: `npx wrangler d1 execute DB --remote --command "DELETE FROM admin_users WHERE email = '<email>'"`.
+- **Signing everyone out:** set a new `SESSION_SECRET` (`npx wrangler secret put SESSION_SECRET`, any long random value). While it is missing, nobody can sign in.
+- **Locally:** run `npx wrangler d1 migrations apply DB --local` once, then `npm run dev` and open `/admin`; dev mode signs you in as `dev@localhost`. To test the real login, put `SESSION_SECRET=<random>` in `.dev.vars`, create a local user with the script and `--local`, and use `npm run preview`.
 - **Schema changes:** add `migrations/000N_name.sql`, apply it locally, then run `npx wrangler d1 migrations apply DB --remote` before pushing code that needs it. Workers Builds does not apply migrations.
-- **Access settings:** `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc` `vars`. While either is empty, every admin request is refused.
-- **Access setup:** team `calm-union-38c3.cloudflareaccess.com`, sign-in by One-time PIN (a code emailed to the user), application "Fairway Atelier Admin" covering `fairwayatelier.com/admin` and `fairwayatelier.com/api/admin`, 24-hour sessions. Created with the `cf` CLI (`cf zero-trust access applications`).
-- **Adding a user:** add their email to the policy "Admin users" (Zero Trust → Access → Applications → Fairway Atelier Admin → Policies). No code change needed.
 
 ## Data model (first version)
 
@@ -43,7 +42,7 @@ A private content-management tool at `fairwayatelier.com/admin`, built into the 
 
 ## Phases
 
-1. **Foundation (T-21):** D1, Access, JWT check, admin shell, audit log. R2 moves to phase 4, and each phase seeds its own data.
+1. **Foundation (T-21):** D1, password sign-in, admin shell, audit log. R2 moves to phase 4, and each phase seeds its own data.
 2. **Availability weeks (T-22):** editor; `/availability`, the Home preview and the enquiry form's date options read from D1. Past weeks hidden from the site automatically (based on the start date, not a scheduled release).
 3. **Enquiries inbox (T-23):** `D1Sink`, list and detail views, status and notes. Needs the privacy policy to name the retention period (D-13).
 4. **Journal articles and media (T-24):** article editor with Markdown preview; image uploads to R2.
