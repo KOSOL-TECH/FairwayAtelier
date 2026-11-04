@@ -298,3 +298,27 @@
 @media (max-width: 960px) {
   .enquiry__row { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Home hero villa sketch (src/assets/villa-banner.svg), from the fairway-atelier-villa-banner.html handover. */
+/* ---- Fairway Atelier villa banner: drawing styles ---- */
+.fav-flank{position:absolute;top:31%;width:36%;max-width:560px;min-width:300px;pointer-events:none;user-select:none}
+.fav-flank--left{left:0}
+.fav-flank--right{right:0;transform:scaleX(-1);--fav-l:none;--fav-r:inline}
+.fav-flank svg{display:block;width:100%;height:auto;overflow:visible}
+.fav-p{fill:var(--fav-paper,#f4f0e8);stroke:none}
+.fav-s,.fav-c,.fav-d,.fav-h,.fav-t,.fav-sk,.fav-fa,.fav-k{fill:none;stroke:var(--fav-ink,#2f3133);stroke-linecap:round;stroke-linejoin:round}
+.fav-c{stroke-width:1.2}
+.fav-d{stroke-width:.85;opacity:.92}
+.fav-h{stroke-width:.7;opacity:.5}
+.fav-t{stroke-width:.55;opacity:.45}
+.fav-sk{stroke-width:.7;opacity:.55}
+.fav-fa{stroke-width:.5;opacity:.3}
+.fav-k{stroke-width:1.8}
+.fav-mark-l{display:var(--fav-l,inline)}
+.fav-mark-r{display:var(--fav-r,none)}
+.fav-fade0{stop-color:#fff;stop-opacity:0}
+.fav-fade1{stop-color:#fff;stop-opacity:1}
+@media (max-width:760px){
+  .fav-flank--right{display:none}
+  .fav-flank--left{position:relative;top:auto;width:100%;max-width:none;margin-top:8px}
+}

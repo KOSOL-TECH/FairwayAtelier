@@ -9,10 +9,10 @@ import { Testimonials } from '../components/islands/Testimonials';
 import MediaImage from '../components/MediaImage.astro';
 import { loadPage } from '../lib/copy';
 import page from '../lib/pages/home';
-// Vector brand art (crisp at any size): crest and the villa sketch, each with a Fairway Atelier signature.
+// Vector brand art (crisp at any size). The villa sketch is inlined once as <symbol id="fav-villa">
+// and drawn by both hero flanks; its styles are the .fav-* rules in components.css.
 import crest from '../assets/crest.svg';
-import villaRight from '../assets/villa-right.svg';
-import villaLeft from '../assets/villa-left.svg';
+import villaSketch from '../assets/villa-banner.svg?raw';
 
 // Rendered on each request so edits in /admin/pages show at once.
 export const prerender = false;
@@ -40,10 +40,10 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
 ---
 <BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}
   ogDescription={c.t.ogDescription}>
+  <Fragment set:html={villaSketch} />
   <main id="main">
     <section class="hero">
-      <img src={villaRight.src} alt="" aria-hidden="true" class="hero__villa hero__villa--right" width="420" height="380" />
-      <img src={villaLeft.src} alt="" aria-hidden="true" class="hero__villa hero__villa--left" width="420" height="380" />
+      <div class="fav-flank fav-flank--right" aria-hidden="true"><svg viewBox="0 0 720 560" focusable="false"><use href="#fav-villa"/></svg></div>
       <div class="hero__content">
         <img src={crest.src} alt="" width="103" height="104" class="hero__crest" />
         <h1 class="display-xl">{c.t.heroTitle}</h1>
@@ -53,6 +53,7 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
           <Button variant="secondary" href="/enquire">{c.t.heroButton2}</Button>
         </div>
       </div>
+      <div class="fav-flank fav-flank--left" aria-hidden="true"><svg viewBox="0 0 720 560" focusable="false"><use href="#fav-villa"/></svg></div>
     </section>
     <Divider ornament tone="brass" style={{ maxWidth: 320, margin: '0 auto' }} />
 
@@ -134,17 +135,6 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
 
 <style>
   .hero { position: relative; overflow: hidden; text-align: center; padding: 92px 40px 84px; }
-  .hero__villa {
-    position: absolute; top: 24px; width: 420px; height: auto; opacity: 0.5; pointer-events: none;
-    -webkit-mask-image: linear-gradient(to left, #000 40%, transparent);
-    mask-image: linear-gradient(to left, #000 40%, transparent);
-  }
-  .hero__villa--right { right: 0; }
-  .hero__villa--left {
-    left: 0;
-    -webkit-mask-image: linear-gradient(to right, #000 40%, transparent);
-    mask-image: linear-gradient(to right, #000 40%, transparent);
-  }
   .hero__content { position: relative; z-index: 1; }
   .hero__crest { height: 104px; width: auto; }
   .hero h1 { margin: 26px auto 0; max-width: 800px; }
@@ -177,7 +167,6 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
 
   @media (max-width: 620px) {
     .hero { padding: 60px 22px 56px; }
-    .hero__villa { width: 200px; opacity: 0.32; }
     .tier { padding: 28px 24px; }
   }
 </style>
