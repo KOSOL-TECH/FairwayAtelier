@@ -322,3 +322,12 @@
   .fav-flank--right{display:none}
   .fav-flank--left{left:50%;width:max(560px,110%);min-width:0;max-width:none;transform:translateX(-47%);opacity:.5;-webkit-mask-image:linear-gradient(#000 165px,transparent 300px);mask-image:linear-gradient(#000 165px,transparent 300px)}
 }
+/* Home hero signature mark, from the fairway-atelier-signature-mark.html handover (version A). */
+.fa-sig{--fa-sig-ink:#b3a07a;display:inline-flex;align-items:center;gap:8px;height:20px;color:var(--fa-sig-ink);white-space:nowrap;pointer-events:none;user-select:none}
+.fa-sig__pair{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:26px;line-height:20px;letter-spacing:-.01em}
+.fa-sig__rule{display:block;width:1px;height:20px;background:currentColor}
+.fa-sig__word{font-family:Montserrat,system-ui,sans-serif;font-weight:400;font-size:9.5px;line-height:1;letter-spacing:.22em;text-transform:uppercase;transform:translateY(.5px)}
+/* placement in the hero (hero needs position:relative) */
+.fa-sig--left{position:absolute;left:16px;top:72%;z-index:1}
+.fa-sig--right{position:absolute;right:16px;top:72%;z-index:1}
+@media (max-width:760px){.fa-sig--left,.fa-sig--right{display:none}}
