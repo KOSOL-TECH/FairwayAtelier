@@ -14,6 +14,7 @@ const NAV: { label: string; href: string | null }[] = [
   { label: 'Overview', href: '/admin' },
   { label: 'Weeks', href: '/admin/weeks' },
   { label: 'Enquiries', href: '/admin/enquiries' },
+  { label: 'Customers', href: '/admin/customers' },
   { label: 'Journal', href: '/admin/journal' },
   { label: 'Media', href: '/admin/media' },
   { label: 'Pages', href: '/admin/pages' },
@@ -43,7 +44,7 @@ const NAV: { label: string; href: string | null }[] = [
       </nav>
       <div class="admin-user">
         <span>{email}</span>
-        <form method="post" action="/admin/logout"><button type="submit">Sign out</button></form>
+        <form method="post" action="/sign-out"><button type="submit">Sign out</button></form>
         <a href="/" target="_blank" rel="noopener">View site</a>
       </div>
     </header>

@@ -15,6 +15,10 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
       {NAV.map(([label, href]) => (
         <a href={href} class="site-nav__link" aria-current={isActive(href) ? 'page' : undefined}>{label}</a>
       ))}
+      {/* /account sends a signed-out visitor on to sign in. The label follows the `signed-in` class (BaseLayout). */}
+      <a href="/account" class="site-nav__link site-nav__account" aria-current={isActive('/account') ? 'page' : undefined}>
+        <span class="when-out">Sign in</span><span class="when-in">Profile</span>
+      </a>
     </nav>
     <button type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu">
       <span></span><span></span><span></span>
@@ -24,6 +28,9 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
     {NAV.map(([label, href]) => (
       <a href={href} class="mobile-menu__link" aria-current={isActive(href) ? 'page' : undefined}>{label}</a>
     ))}
+    <a href="/account" class="mobile-menu__link" aria-current={isActive('/account') ? 'page' : undefined}>
+      <span class="when-out">Sign in</span><span class="when-in">Profile</span>
+    </a>
   </nav>
 </header>
 
@@ -66,6 +73,14 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
   }
   .site-nav__link:hover, .mobile-menu__link:hover { color: var(--accent-text); }
   .site-nav__link[aria-current='page'] { color: var(--accent-text); border-bottom-color: var(--accent); }
+  /* "Sign in" / "Profile" sits above the menu, in the corner: it is about the visitor, not the journey,
+     and the row of pages has no room for an eighth link at 1024px. */
+  .site-header__bar { position: relative; }
+  .site-nav__account {
+    position: absolute; top: 2px; right: 40px; padding: 7px 0 5px;
+    font-size: 10px; letter-spacing: 0.16em; line-height: 1.3; color: var(--text-muted);
+  }
+  .site-nav__account:focus-visible { outline-color: var(--accent-text); }
 
   .menu-toggle {
     display: none; flex-direction: column; gap: 5px; width: 40px; padding: 8px;

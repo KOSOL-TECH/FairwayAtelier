@@ -9,7 +9,8 @@ npm install
 npm run dev         # http://localhost:4321
 npm run build       # astro check + build into dist/
 npm run preview     # serve the production build locally in workerd (Cloudflare's runtime)
-npm test            # unit tests (Vitest): enquiry validation, consent expiry
+npm test            # unit tests (Vitest)
+npm run test:coverage  # the same, with a coverage report
 npm run deploy      # build and deploy to Cloudflare Workers (run `npx wrangler login` first)
 npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangler.jsonc
 ```
@@ -19,11 +20,13 @@ npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangl
 | Path | What it holds |
 |---|---|
 | `src/pages/` | One file per route, all rendered on demand in the Worker |
-| `src/middleware.ts` | Admin sign-in guard, edge-cache rules for public pages, purge after admin changes |
+| `src/middleware.ts` | Refuses cross-site writes, resolves the signed-in account, guards `/account` and `/admin`, edge-cache rules for public pages, purge after admin changes |
+| `src/lib/account/` | Guest accounts: profile questions, sessions, sign-in (email, Google, Apple), the D1 store, emails. Design in [accounts.md](accounts.md) |
+| `src/pages/join.astro`, `sign-in.astro`, `account/`, `auth/`, `api/account/` | Onboarding, sign-in, the guest profile and its APIs. Never cached |
 | `src/lib/copy.ts`, `src/lib/pages/` | Editable page copy: approved originals in code, edits in D1 (`/admin/pages`) |
 | `src/layouts/BaseLayout.astro` | `<head>` (title, meta, canonical, OG/Twitter, JSON-LD), header, footer, consent |
 | `src/components/ui/` | Design-system components (same props as `prototype/components`) |
-| `src/components/islands/` | React islands: `CookieConsent`, `EnquiryForm`, `JourneyTiers`, `Testimonials` |
+| `src/components/islands/` | React islands: `CookieConsent`, `EnquiryForm`, `JourneyTiers`, `Testimonials`, and for accounts `JoinFlow`, `ProfileEditor`, `ProfilePrompt` |
 | `src/lib/weeks.ts` | Opened weeks, stored in D1 and edited at `/admin/weeks`: feeds `/availability`, the Home preview and the enquiry date options |
 | `src/lib/articles.ts`, `src/lib/media.ts` | Journal articles and the media library, stored in D1 and R2 and edited at `/admin/journal` and `/admin/media` |
 | `src/styles/` | Tokens (copied from the prototype), fonts, base, layout primitives, component CSS |
@@ -41,7 +44,7 @@ Every page renders on demand, so edits made in the admin (D1) show without a reb
 
 ## Admin
 
-`/admin` is the private content tool (email and password sign-in, D1 database). See [admin.md](admin.md) for its design, local setup and migrations.
+`/admin` is the private content tool and CRM (D1 database), open to accounts with the admin role. See [admin.md](admin.md) for its design, local setup and migrations, and [accounts.md](accounts.md) for guest profiles, sign-in and the Google/Apple setup.
 
 ## Enquiry endpoint
 

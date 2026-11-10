@@ -13,7 +13,7 @@ export const prerender = false;
 const c = await loadPage(env.DB, page);
 const dateOptions = await getDateOptions();
 ---
-<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription} prompt={false}>
   <main id="main" class="sec" style="--max:720px; --pt:72px; --pb:96px">
     <div class="center head">
       <Eyebrow rules tone="brass">{c.t.heroEyebrow}</Eyebrow>

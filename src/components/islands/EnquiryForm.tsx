@@ -29,6 +29,8 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
   const [sendError, setSendError] = useState(false);
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
   const [sent, setSent] = useState<{ first: string; email: string } | null>(null);
+  // A signed-in guest's own name, email and phone, filled in for them (and again after the form is cleared).
+  const [profile, setProfile] = useState<Pick<Record<Text, string>, 'name' | 'email' | 'phone'> | null>(null);
   // One id per enquiry: a retry after a failed send updates it on the server instead of duplicating it.
   const submission = useRef(newId());
   const formRef = useRef<HTMLFormElement>(null);
@@ -46,6 +48,23 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
   };
   const touch = (k: Text) => () => setTouched((t) => ({ ...t, [k]: true }));
   const show = (k: keyof FieldErrors) => ((touched[k as Text] || submitted) ? errs[k] : undefined);
+
+  // The page is cached and the same for everyone, so a signed-in guest's details are fetched after it loads.
+  // Only fields still empty are filled: whatever the guest has typed stays.
+  useEffect(() => {
+    if (!document.documentElement.classList.contains('signed-in')) return;
+    let cancelled = false;
+    fetch('/api/account/me')
+      .then((res) => (res.ok ? (res.json() as Promise<{ ok?: boolean; name?: string; email?: string; phone?: string }>) : null))
+      .then((me) => {
+        if (cancelled || !me?.ok) return;
+        const mine = { name: me.name ?? '', email: me.email ?? '', phone: me.phone ?? '' };
+        setProfile(mine);
+        setForm((f) => ({ ...f, name: f.name || mine.name, email: f.email || mine.email, phone: f.phone || mine.phone }));
+      })
+      .catch(() => {}); // not signed in after all, or offline: the form simply starts empty
+    return () => { cancelled = true; };
+  }, []);
 
   // After a failed attempt, move focus to the first invalid field once it has rendered.
   useEffect(() => {
@@ -85,7 +104,7 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
   const close = () => {
     setSent(null);
     submission.current = newId();
-    setForm(EMPTY); setTier('Undecided'); setTouched({}); setSubmitted(false);
+    setForm({ ...EMPTY, ...profile }); setTier('Undecided'); setTouched({}); setSubmitted(false);
   };
 
   return (
@@ -132,7 +151,13 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
         </div>
       </form>
       <Dialog open={sent !== null} onClose={close} eyebrow="Received" title="Thank you"
-        actions={<Button onClick={close}>Close</Button>}>
+        actions={
+          <>
+            <Button onClick={close}>Close</Button>
+            {/* For a guest without a profile: a quiet way to keep their preferences for next time. */}
+            {!profile && <Button variant="ghost" href="/join">Create your profile</Button>}
+          </>
+        }>
         Thank you, {sent?.first || 'and welcome'}. Your enquiry is with our France-based team. We will reply within 24 hours to arrange a 30–45 minute consultation call — a personal conversation, not a brochure. A confirmation is on its way to {sent?.email || 'your inbox'}.
       </Dialog>
     </>

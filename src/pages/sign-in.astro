@@ -1,0 +1,95 @@
+---
+import { env } from 'cloudflare:workers';
+import AuthLayout from '../layouts/AuthLayout.astro';
+import { ProviderButton } from '../components/ui/ProviderButton';
+import { logChange } from '../lib/admin/audit';
+import { signIn } from '../lib/account/auth';
+import { safeNext } from '../lib/account/guard';
+import { clientIp, limited, startSession } from '../lib/account/http';
+import { enabledProviders, oauthErrorMessage } from '../lib/account/oauth';
+import { recordSignIn, type Role } from '../lib/account/store';
+
+export const prerender = false;
+
+const params = Astro.url.searchParams;
+// Where to go afterwards: back to the page that asked for a sign-in, else the admin for admins and the profile for guests.
+const next = safeNext(params.get('next'), '');
+const home = (role: Role) => next || (role === 'admin' ? '/admin' : '/account');
+// The admin needs a sign-in from the last 12 hours and sends an older one here with `again`.
+const again = params.get('again') === '1';
+
+const account = Astro.locals.account;
+if (account && !(again && !Astro.locals.signInFresh)) return Astro.redirect(home(account.role), 303);
+
+const NOTICES: Record<string, string> = {
+  out: 'You are signed out.',
+  deleted: 'Your profile has been deleted.',
+};
+const notice = again ? 'To open the admin, please sign in again.' : (NOTICES[params.get('notice') ?? ''] ?? '');
+let error = oauthErrorMessage(params.get('error'), params.get('provider'));
+let email = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  email = String(form.get('email') ?? '').slice(0, 254);
+  const password = String(form.get('password') ?? '').slice(0, 1024);
+  // Brakes on guessing: 5 attempts a minute per IP, and 5 per email so many IPs cannot share one account's budget.
+  if (await limited(env.LOGIN_LIMITER, `login:${clientIp(Astro.request)}`, `login-email:${email.trim().toLowerCase()}`)) {
+    error = 'Too many attempts. Please wait a minute and try again.';
+    Astro.response.status = 429;
+  } else if (!env.SESSION_SECRET) {
+    error = 'Sign-in is not available right now. Please try again later.';
+    Astro.response.status = 503;
+  } else {
+    const found = await signIn(env.DB, email, password);
+    if (found) {
+      await recordSignIn(env.DB, found.id);
+      await startSession(Astro.cookies, found, env.SESSION_SECRET);
+      // Admin sign-ins are audited; guests' are not (the audit log is the team's record, not theirs).
+      if (found.role === 'admin') await logChange(env.DB, found.email, 'sign_in', 'account', found.id);
+      return Astro.redirect(home(found.role), 303);
+    }
+    error = 'That email and password do not match.';
+    Astro.response.status = 401;
+  }
+}
+
+const providers = enabledProviders(env);
+const startHref = (provider: string) => `/auth/${provider}/start${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+---
+<AuthLayout title="Sign in">
+  <div class="frame auth__card">
+    <div class="frame__inner auth__inner">
+      <p class="label label--11 auth__eyebrow">Your profile</p>
+      <h1 class="display-md auth__title">Welcome back</h1>
+      {notice && <p class="auth__notice" role="status">{notice}</p>}
+      {error && <p id="sign-in-error" class="auth__error" role="alert">{error}</p>}
+
+      {providers.length > 0 && (
+        <Fragment>
+          <div class="auth__providers">
+            {providers.map((p) => <ProviderButton provider={p} href={startHref(p)} />)}
+          </div>
+          <div class="auth__or" role="presentation"><span>or</span></div>
+        </Fragment>
+      )}
+
+      <form method="post" class="auth__form">
+        <div class="fa-field">
+          <label class="fa-field__label" for="email">Email</label>
+          <input id="email" class="fa-field__control" type="email" name="email" value={email} autocomplete="username" required
+            aria-describedby={error ? 'sign-in-error' : undefined} />
+        </div>
+        <div class="fa-field">
+          <label class="fa-field__label" for="password">Password</label>
+          <input id="password" class="fa-field__control" type="password" name="password" autocomplete="current-password" required
+            aria-describedby={error ? 'sign-in-error' : undefined} />
+        </div>
+        <button type="submit" class="fa-btn fa-btn--primary fa-btn--lg auth__submit">Sign in</button>
+      </form>
+
+      <p class="auth__links"><a href="/forgot-password">Forgot your password?</a></p>
+      <p class="auth__links">New here? <a href="/join">Create your profile</a> in under a minute.</p>
+    </div>
+  </div>
+</AuthLayout>

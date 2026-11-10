@@ -1,0 +1,135 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import { displayName, normaliseCore, normaliseEmail, splitName } from '../../../lib/account/profile';
+import { ROLE_LABEL, countByRole, createAccount, getAccountByEmail, listAccounts, purgeInactiveAccounts, type AccountListItem } from '../../../lib/account/store';
+import { RETENTION_YEARS } from '../../../lib/enquiry/store';
+
+export const prerender = false;
+
+const sheetUrl = (id: string, msg: string) => `/admin/customers/${id}?saved=${encodeURIComponent(msg)}`;
+let error = '';
+let draft = { name: '', email: '', phone: '' };
+
+// "Start a sheet": a customer sheet for someone who has not created a profile, e.g. after a call.
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  draft = {
+    name: String(form.get('name') ?? '').slice(0, 200),
+    email: String(form.get('email') ?? '').slice(0, 254),
+    phone: String(form.get('phone') ?? '').slice(0, 40),
+  };
+  const email = normaliseEmail(draft.email);
+  if (!email) {
+    error = 'Please check the email address.';
+  } else {
+    const existing = await getAccountByEmail(env.DB, email);
+    if (existing) return Astro.redirect(sheetUrl(existing.id, 'This address already has a sheet.'), 303);
+    const { first_name, last_name } = splitName(draft.name);
+    const created = await createAccount(env.DB, { email, firstName: first_name, lastName: last_name, phone: normaliseCore({ phone: draft.phone }).phone });
+    if (created) {
+      // The audit log records which account, never the guest's details.
+      await logChange(env.DB, Astro.locals.adminEmail!, 'create', 'account', created.id);
+      return Astro.redirect(sheetUrl(created.id, 'The sheet was started. The guest can claim it by creating a profile with this email.'), 303);
+    }
+    error = 'The sheet could not be started. Please try again.';
+  }
+}
+
+await purgeInactiveAccounts(env.DB).catch((err) => console.error('[accounts] retention purge failed', err));
+
+const params = Astro.url.searchParams;
+const role = (['customer', 'admin'] as const).find((r) => r === params.get('role'));
+const q = (params.get('q') ?? '').trim().slice(0, 100);
+const [counts, accounts] = await Promise.all([countByRole(env.DB), listAccounts(env.DB, { q, role })]);
+const saved = params.get('saved');
+const tab = (r?: string) => {
+  const query = new URLSearchParams({ ...(r ? { role: r } : {}), ...(q ? { q } : {}) }).toString();
+  return `/admin/customers${query ? `?${query}` : ''}`;
+};
+const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { dateStyle: 'medium', timeZone: 'Europe/Paris' }) : '—');
+
+/** How this person signs in, or that the sheet was started by the team and is not claimed yet. */
+function signsInWith(a: AccountListItem): string {
+  const ways = [...(a.has_password ? ['Password'] : []), ...(a.providers ?? '').split(',').filter(Boolean).sort().map((p) => (p === 'google' ? 'Google' : 'Apple'))];
+  return ways.join(', ') || 'Not claimed yet';
+}
+---
+<AdminLayout title="Customers">
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  {error && <p class="admin-error" role="alert">{error}</p>}
+  <p class="admin-intro">
+    {`Everyone with a profile, newest first, plus the sheets the team has started. A guest's sheet holds what they told us in their profile and what the team adds after a call. Guest accounts are deleted automatically ${RETENTION_YEARS} years after the last sign-in or change, unless the guest has booked.`}
+  </p>
+
+  <form method="get" class="admin-inline customers-search" role="search">
+    {role && <input type="hidden" name="role" value={role} />}
+    <label for="q" class="sr-only">Search by name or email</label>
+    <input id="q" type="text" name="q" value={q} placeholder="Name or email" />
+    <button type="submit">Search</button>
+    {q && <a href={role ? `/admin/customers?role=${role}` : '/admin/customers'}>Clear</a>}
+  </form>
+
+  <nav class="admin-tabs" aria-label="Filter by role">
+    <a href={tab()} aria-current={!role ? 'page' : undefined}>All ({counts.customer + counts.admin})</a>
+    <a href={tab('customer')} aria-current={role === 'customer' ? 'page' : undefined}>Guests ({counts.customer})</a>
+    <a href={tab('admin')} aria-current={role === 'admin' ? 'page' : undefined}>Admins ({counts.admin})</a>
+  </nav>
+
+  {accounts.length === 0 ? (
+    <p class="admin-empty">{q ? `Nobody matches "${q}".` : 'No customers yet. Profiles appear here as guests create them.'}</p>
+  ) : (
+    <table class="admin-table">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Signs in with</th><th>Details</th><th>Enquiries</th><th>Last sign-in</th><th>Since</th></tr>
+      </thead>
+      <tbody>
+        {accounts.map((a) => (
+          <tr>
+            <td>
+              <a href={`/admin/customers/${a.id}`}>{displayName(a)}</a>
+              {a.role === 'admin' && <span class="admin-tag">{ROLE_LABEL.admin}</span>}
+            </td>
+            <td>{a.email}{!a.email_verified && <span class="admin-hint"> (not confirmed)</span>}</td>
+            <td>{signsInWith(a)}</td>
+            <td>{a.answered}</td>
+            <td>{a.enquiries}</td>
+            <td>{day(a.last_seen_at)}</td>
+            <td>{day(a.created_at)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+
+  <h2>Start a sheet</h2>
+  <p class="admin-intro">
+    For someone who has enquired or called but has no profile yet. Nothing is sent to them. If they later create a profile with the same
+    email, they are emailed a link to claim this sheet, and what you recorded is there for them.
+  </p>
+  <form method="post" class="admin-form">
+    <fieldset>
+      <legend>New customer sheet</legend>
+      <div class="admin-row">
+        <label for="new-name">Name</label>
+        <input id="new-name" type="text" name="name" value={draft.name} maxlength="140" autocomplete="off" />
+      </div>
+      <div class="admin-row">
+        <label for="new-email">Email</label>
+        <input id="new-email" type="text" inputmode="email" name="email" value={draft.email} maxlength="254" autocomplete="off" required aria-invalid={error ? 'true' : undefined} />
+      </div>
+      <div class="admin-row">
+        <label for="new-phone">Phone</label>
+        <input id="new-phone" type="text" inputmode="tel" name="phone" value={draft.phone} maxlength="40" autocomplete="off" />
+      </div>
+    </fieldset>
+    <div class="admin-actions"><button type="submit">Start the sheet</button></div>
+  </form>
+</AdminLayout>
+
+<style>
+  .customers-search { margin: 0 0 16px; flex-wrap: wrap; }
+  .customers-search input { min-width: 240px; }
+  .admin-tag { margin-left: 8px; }
+</style>

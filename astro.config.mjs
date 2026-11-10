@@ -18,5 +18,9 @@ export default defineConfig({
   // No sessions are used, so no KV namespace is provisioned for them.
   session: false,
   cache: { provider: cacheCloudflare() },
+  // Cross-site writes are refused in src/middleware.ts instead (isCrossSiteWrite):
+  // the same check, on every non-GET request rather than form posts only, with
+  // one exception Astro's built-in check cannot make: Apple's sign-in callback.
+  security: { checkOrigin: false },
   integrations: [react()],
 });

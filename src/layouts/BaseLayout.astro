@@ -18,9 +18,11 @@ interface Props {
   index?: boolean;
   /** Social image for this page (absolute URL and size); the brand cover by default */
   ogImage?: { url: string; width: number; height: number; alt: string };
+  /** Set false where a signed-in guest should not be asked a profile question (the enquiry form, legal pages, their own profile) */
+  prompt?: boolean;
 }
 
-const { title, description, ogTitle = title, ogDescription = description, ogType = 'website', jsonLd = [], index = true } = Astro.props;
+const { title, description, ogTitle = title, ogDescription = description, ogType = 'website', jsonLd = [], index = true, prompt = true } = Astro.props;
 const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '/') || '/';
 const url = canonical(path);
 const og = Astro.props.ogImage ?? {
@@ -62,7 +64,9 @@ const ld = [TRAVEL_AGENCY_LD, ...jsonLd];
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="sitemap" href="/sitemap.xml" />
     {ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj)} />)}
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    {/* Pages are cached and the same for everyone. `signed-in` comes from a cookie that holds nothing but "1"
+        (set beside the real session cookie) and only switches the header link to "Profile". */}
+    <script is:inline>document.documentElement.classList.add('js');if(document.cookie.split('; ').indexOf('fa_in=1')>-1)document.documentElement.classList.add('signed-in');</script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -70,11 +74,17 @@ const ld = [TRAVEL_AGENCY_LD, ...jsonLd];
     <slot />
     <Footer />
     <CookieConsent client:idle />
+    {prompt && <div id="profile-prompt"></div>}
     <script>
       import { initAnalytics } from '../lib/analytics';
       import { initScrollReveal } from '../lib/scroll-reveal';
       initAnalytics();
       initScrollReveal();
+      // A later question for a signed-in guest (docs/accounts.md). Loaded only for them, so other visitors download nothing more.
+      const slot = document.getElementById('profile-prompt');
+      if (slot && document.documentElement.classList.contains('signed-in')) {
+        import('../components/islands/ProfilePrompt').then((m) => m.mountProfilePrompt(slot));
+      }
     </script>
   </body>
 </html>

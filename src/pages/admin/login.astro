@@ -1,79 +1,14 @@
 ---
-import { env } from 'cloudflare:workers';
-import '../../styles/global.css';
-import { authenticate, currentSessionKey, safeNext } from '../../lib/admin/login';
-import { logChange } from '../../lib/admin/audit';
-import { SESSION_COOKIE, createSession, sessionCookieOptions } from '../../lib/admin/session';
+import { safeNext } from '../../lib/account/guard';
 
+/**
+ * The admin no longer has its own login: everyone signs in at /sign-in, and
+ * the admin role on an account opens /admin (docs/accounts.md). This address
+ * is kept for old bookmarks. The middleware has already asked for an admin
+ * sign-in before this runs, so it only has to pass the visitor on.
+ */
 export const prerender = false;
 
-const next = safeNext(Astro.url.searchParams.get('next'));
-if (Astro.locals.adminEmail) return Astro.redirect(next, 303);
-
-let error = '';
-let email = '';
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  email = String(form.get('email') ?? '').slice(0, 254);
-  const password = String(form.get('password') ?? '').slice(0, 1024);
-  // Brakes on guessing: 5 attempts per minute per IP, and 5 per minute per email
-  // so many IPs cannot share one account's budget (LOGIN_LIMITER in wrangler.jsonc).
-  const ip = Astro.request.headers.get('CF-Connecting-IP') ?? 'unknown';
-  const limit = async (key: string) => (env.LOGIN_LIMITER ? (await env.LOGIN_LIMITER.limit({ key })).success : true);
-  const success = (await limit(`login:${ip}`)) && (await limit(`login-email:${email.trim().toLowerCase()}`));
-
-  if (!success) {
-    error = 'Too many attempts. Please wait a minute and try again.';
-    Astro.response.status = 429;
-  } else if (!env.SESSION_SECRET) {
-    error = 'Sign-in is not configured yet.';
-    Astro.response.status = 503;
-  } else {
-    const user = await authenticate(env.DB, email, password);
-    const key = user && (await currentSessionKey(env.DB, user));
-    if (user && key) {
-      Astro.cookies.set(SESSION_COOKIE, await createSession(user, key, env.SESSION_SECRET), sessionCookieOptions);
-      await logChange(env.DB, user, 'sign_in', 'admin_user', user).catch((err) => console.error('[admin] sign-in audit failed', err));
-      return Astro.redirect(next, 303);
-    }
-    error = 'That email and password do not match.';
-    Astro.response.status = 401;
-  }
-}
+const next = safeNext(Astro.url.searchParams.get('next'), '/admin');
+return Astro.redirect(next.startsWith('/admin/login') ? '/admin' : next, 303);
 ---
-<!doctype html>
-<html lang="en-GB">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Sign in · Fairway Atelier Admin</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-  </head>
-  <body class="login">
-    <main>
-      <h1>Fairway Atelier <span>Admin</span></h1>
-      <form method="post">
-        {error && <p class="error" role="alert">{error}</p>}
-        <label>Email<input type="email" name="email" value={email} autocomplete="username" required autofocus /></label>
-        <label>Password<input type="password" name="password" autocomplete="current-password" required /></label>
-        <button type="submit">Sign in</button>
-      </form>
-    </main>
-  </body>
-</html>
-
-<style>
-  .login { min-height: 100vh; display: grid; place-items: center; background: var(--surface-page); font-family: var(--font-sans); padding: 16px; }
-  main { width: 100%; max-width: 380px; background: var(--surface-card); border: 1px solid var(--border-hairline); padding: 32px; }
-  h1 { font-family: var(--font-display); font-weight: 400; color: var(--text-heading); font-size: 28px; margin: 0 0 24px; }
-  h1 span { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); margin-left: 6px; }
-  form { display: grid; gap: 16px; }
-  label { display: grid; gap: 6px; font-size: 14px; color: var(--text-heading); }
-  input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--color-soft-stone); background: var(--surface-card); }
-  input:focus { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
-  button { font: inherit; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px; border: 0; cursor: pointer; background: var(--surface-accent); color: var(--text-on-dark); }
-  button:hover { background: var(--color-fairway-deep); }
-  .error { margin: 0; padding: 10px 12px; font-size: 14px; background: #F6E7E2; color: #7A2E1F; }
-</style>

@@ -1,0 +1,49 @@
+---
+import { Image } from 'astro:assets';
+import '../styles/global.css';
+import wordmark from '../assets/wordmark.png';
+import { CONTACT_EMAIL } from '../lib/site';
+
+/**
+ * A plain frame for signing in and creating a profile: the wordmark, a way
+ * back to the site, and the card. No site menu, cookie banner or analytics:
+ * these pages set only the cookies that signing in needs.
+ */
+interface Props {
+  /** Browser tab title; the site name is added */
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#2F3133" />
+    <title>{`${title} — Fairway Atelier`}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body class="auth">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="auth__bar">
+      <a href="/" class="auth__logo" aria-label="Fairway Atelier, home">
+        <Image src={wordmark} alt="Fairway Atelier" height={24} densities={[1, 2]} loading="eager" />
+      </a>
+      <a href="/" class="auth__exit">Back<span class="auth__exit-rest"> to the site</span></a>
+    </header>
+    <main id="main" class="auth__main">
+      <slot />
+    </main>
+    <footer class="auth__foot">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+    </footer>
+  </body>
+</html>

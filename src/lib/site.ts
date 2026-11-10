@@ -45,6 +45,7 @@ export const FOOTER_PLAN = [
   ['Journal', '/journal'],
   ['FAQ', '/faq'],
   ['Enquire', '/enquire'],
+  ['Your profile', '/account'],
 ] as const;
 
 export const FOOTER_LEGAL = [

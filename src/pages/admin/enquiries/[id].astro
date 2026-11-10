@@ -2,6 +2,8 @@
 import { env } from 'cloudflare:workers';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { logChange } from '../../../lib/admin/audit';
+import { splitName } from '../../../lib/account/profile';
+import { createAccount, getAccountByEmail } from '../../../lib/account/store';
 import {
   ENQUIRY_STATUSES, ENQUIRY_STATUS_LABEL, deleteEnquiry, getEnquiry, updateEnquiry, type EnquiryStatus,
 } from '../../../lib/enquiry/store';
@@ -13,9 +15,18 @@ if (!enquiry) return Astro.redirect('/admin/enquiries', 303);
 
 const email = Astro.locals.adminEmail!;
 const back = (msg: string) => Astro.redirect(`/admin/enquiries?saved=${encodeURIComponent(msg)}`, 303);
+// The customer sheet for this guest's email, if one exists (docs/accounts.md).
+const sheet = await getAccountByEmail(env.DB, enquiry.email);
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
+  // Start a customer sheet from this enquiry: name, email and phone only. Nothing is sent to the guest.
+  if (form.get('action') === 'sheet') {
+    const created = sheet ? null : await createAccount(env.DB, { email: enquiry.email, ...(({ first_name, last_name }) => ({ firstName: first_name, lastName: last_name }))(splitName(enquiry.name)), phone: enquiry.phone });
+    if (created) await logChange(env.DB, email, 'create', 'account', created.id);
+    const target = sheet ?? created ?? (await getAccountByEmail(env.DB, enquiry.email));
+    return Astro.redirect(target ? `/admin/customers/${target.id}` : '/admin/customers', 303);
+  }
   // The audit log records which enquiry changed, never the guest's details.
   if (form.get('action') === 'delete') {
     await deleteEnquiry(env.DB, enquiry.id);
@@ -56,7 +67,17 @@ const rows: [string, string][] = [
       {rows.map(([k, v]) => <tr><th scope="row">{k}</th><td>{v}</td></tr>)}
     </tbody>
   </table>
-  <p><a class="admin-button" href={mailto}>Reply by email</a></p>
+  <div class="admin-actions">
+    <a class="admin-button" href={mailto}>Reply by email</a>
+    {sheet ? (
+      <a href={`/admin/customers/${sheet.id}`}>Open their customer sheet</a>
+    ) : (
+      <form method="post" class="admin-inline">
+        <input type="hidden" name="action" value="sheet" />
+        <button type="submit" class="admin-secondary">Start a customer sheet</button>
+      </form>
+    )}
+  </div>
 
   <form method="post" class="admin-form">
     <fieldset>

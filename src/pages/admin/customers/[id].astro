@@ -1,0 +1,269 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { logChange } from '../../../lib/admin/audit';
+import { CORE_FIELDS, CORE_LABEL, completeness, displayName, normaliseCore } from '../../../lib/account/profile';
+import { QUESTIONS, SECTIONS, changedAnswers, isRelevant, multiValues, normaliseAnswers, type Answers } from '../../../lib/account/questions';
+import {
+  ROLES, ROLE_LABEL, SOURCE_LABEL, answersOf, deleteAccount, deleteProblem, enquiriesFor, getAccount, getAnswers, providersOf,
+  roleChangeProblem, saveAnswers, saveInternalNotes, setRole, teamCanFill, updateCore, type Role,
+} from '../../../lib/account/store';
+import { ENQUIRY_STATUS_LABEL } from '../../../lib/enquiry/store';
+
+// The customer sheet: what a guest told us, what the team adds, their enquiries, and their role.
+export const prerender = false;
+
+const account = await getAccount(env.DB, Astro.params.id ?? '');
+if (!account) return Astro.redirect('/admin/customers', 303);
+
+const adminEmail = Astro.locals.adminEmail!;
+// The signed-in admin's own account id ('' in `astro dev`, where the admin opens without signing in).
+const actor = Astro.locals.account?.id ?? '';
+const name = displayName(account);
+const here = `/admin/customers/${account.id}`;
+const done = (msg: string, to = here) => Astro.redirect(`${to}?saved=${encodeURIComponent(msg)}`, 303);
+let error = '';
+
+const providers = await providersOf(env.DB, account.id);
+// Details the team records are shown to whoever holds the profile, so they are only
+// taken once that can be nobody but the guest (see teamCanFill). Team notes always are.
+const canFill = teamCanFill(account, providers);
+
+/** What the form showed when it was opened, sent back with it: only what the team actually changed is saved. */
+function loadedFrom(raw: string): { core: Record<string, string>; answers: Answers } | null {
+  try {
+    const data = JSON.parse(raw) as { core?: unknown; answers?: unknown };
+    const strings = (o: unknown) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
+    return { core: strings(data.core), answers: strings(data.answers) };
+  } catch {
+    return null;
+  }
+}
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('action') ?? 'save');
+  const text = (field: string) => String(form.get(field) ?? '');
+
+  if (action === 'delete') {
+    error = deleteProblem(actor, account) ?? '';
+    if (!error) {
+      await deleteAccount(env.DB, account.id);
+      await logChange(env.DB, adminEmail, 'delete', 'account', account.id);
+      return done(`The sheet for ${name} was deleted.`, '/admin/customers');
+    }
+  } else if (action === 'role') {
+    const role = text('role') as Role;
+    error = roleChangeProblem(actor, account, role) ?? '';
+    if (!error) {
+      if (role === account.role) return done('Nothing changed.');
+      await setRole(env.DB, account.id, role);
+      await logChange(env.DB, adminEmail, 'update', 'account', account.id, { role: [account.role, role] });
+      return done(`${name} is now ${role === 'admin' ? 'an admin' : 'a guest'}, and has been signed out everywhere.`);
+    }
+  } else {
+    // Compared with what the form showed when it was opened, not with the database now:
+    // if the guest changed something in the meantime, a field the team did not touch must not undo it.
+    // Every question is on the form, so an untouched empty field must not be recorded as "skipped" either.
+    const loaded = loadedFrom(text('loaded'));
+    const core = canFill ? normaliseCore(Object.fromEntries(CORE_FIELDS.map((f) => [f, text(f)]))) : {};
+    const coreChanged = CORE_FIELDS.filter((f) => core[f] !== undefined && core[f] !== (loaded?.core[f] ?? account[f]));
+    const submitted = canFill
+      ? normaliseAnswers(Object.fromEntries(QUESTIONS.map((q) => [q.id, q.kind === 'multi' ? form.getAll(`q_${q.id}`).map(String) : text(`q_${q.id}`)])))
+      : {};
+    const answersChanged = changedAnswers(loaded?.answers ?? answersOf(await getAnswers(env.DB, account.id)), submitted);
+    const notes = text('internal_notes').replace(/\r\n/g, '\n').slice(0, 5000);
+    const notesChanged = notes !== account.internal_notes;
+
+    if (!coreChanged.length && !Object.keys(answersChanged).length && !notesChanged) return done('Nothing changed.');
+    await updateCore(env.DB, account.id, Object.fromEntries(coreChanged.map((f) => [f, core[f]])));
+    await saveAnswers(env.DB, account.id, answersChanged, 'team');
+    if (notesChanged) await saveInternalNotes(env.DB, account.id, notes);
+    // The audit log records which fields changed, never what they say.
+    await logChange(env.DB, adminEmail, 'update', 'account', account.id, {
+      ...(coreChanged.length && { fields: coreChanged }),
+      ...(Object.keys(answersChanged).length && { answers: Object.keys(answersChanged) }),
+      ...(notesChanged && { notes: 'changed' }),
+    });
+    return done(`The sheet for ${name} was saved.`);
+  }
+  Astro.response.status = 422;
+}
+
+const [rows, enquiries] = await Promise.all([getAnswers(env.DB, account.id), enquiriesFor(env.DB, account.email)]);
+const answers = answersOf(rows);
+const stored = new Map(rows.map((r) => [r.question, r]));
+const progress = completeness(account, answers);
+const open = QUESTIONS.filter((q) => !answers[q.id] && isRelevant(q, answers));
+const saved = Astro.url.searchParams.get('saved');
+const isSelf = actor === account.id;
+
+const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { dateStyle: 'medium', timeZone: 'Europe/Paris' });
+const moment = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+const ways = [...(account.password_hash ? ['Password'] : []), ...providers.map((p) => (p === 'google' ? 'Google' : 'Apple'))];
+
+/** Under each answer: where it came from and when. */
+function origin(id: string): string {
+  const row = stored.get(id);
+  if (!row) return '';
+  if (!row.value) return row.source === 'team' ? `Cleared by the team · ${day(row.updated_at)}` : `Skipped or cleared by the guest · ${day(row.updated_at)}`;
+  return `${SOURCE_LABEL[row.source]} · ${day(row.updated_at)}`;
+}
+
+const summary: [string, string][] = [
+  ['Email', `${account.email}${account.email_verified ? ' (confirmed)' : ' (not confirmed)'}`],
+  ['Role', ROLE_LABEL[account.role]],
+  ['Signs in with', ways.join(', ') || 'Not claimed yet: the team started this sheet'],
+  ['Last sign-in', account.last_seen_at ? `${moment(account.last_seen_at)} (Paris)` : 'Never'],
+  ['Since', day(account.created_at)],
+  ['Emails from us', account.marketing_opt_in ? `Yes, asked for on ${day(account.marketing_opt_in_at ?? account.updated_at)}` : 'No'],
+  ['Profile', `${progress.done} of ${progress.total} details (${progress.percent}%)`],
+];
+const mailto = `mailto:${encodeURIComponent(account.email)}?body=${encodeURIComponent(account.first_name ? `Dear ${account.first_name},\n\n` : '')}`;
+---
+<AdminLayout title={name}>
+  <p><a href="/admin/customers">← All customers</a></p>
+  {saved && <p class="admin-flash" role="status">{saved}</p>}
+  {error && <p class="admin-error" role="alert">{error}</p>}
+
+  <table class="admin-table admin-detail">
+    <tbody>
+      {summary.map(([k, v]) => <tr><th scope="row">{k}</th><td>{v}</td></tr>)}
+    </tbody>
+  </table>
+  <p><a class="admin-button" href={mailto}>Write to them</a></p>
+
+  <h2>Enquiries from this address</h2>
+  {enquiries.length === 0 ? (
+    <p class="admin-empty">None yet.</p>
+  ) : (
+    <table class="admin-table sheet-enquiries">
+      <thead><tr><th>Received</th><th>Dates</th><th>Party</th><th>Tier</th><th>Status</th></tr></thead>
+      <tbody>
+        {enquiries.map((e) => (
+          <tr>
+            <td><a href={`/admin/enquiries/${e.id}`}>{day(e.received_at)}</a></td>
+            <td>{e.dates}</td><td>{e.party}</td><td>{e.tier}</td><td>{ENQUIRY_STATUS_LABEL[e.status]}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+
+  {open.length > 0 && (
+    <details class="sheet-open">
+      <summary>{`Still to ask (${open.length})`}</summary>
+      <ul>{open.map((q) => <li>{q.ask}</li>)}</ul>
+    </details>
+  )}
+
+  <h2>The sheet</h2>
+  <p class="admin-intro">
+    What the guest has told us, and what you add. Anything you fill in here is marked as coming from the team, and the guest sees it in
+    their own profile. The team notes at the end are never shown to them.
+  </p>
+  {!canFill && (
+    <p class="admin-error" role="note">
+      {`This profile's email address has not been confirmed, so whoever created it may not be ${name}. Until it is confirmed from the profile, details cannot be added here, because they would be shown to whoever holds the profile. Keep what you learn in the team notes below.`}
+    </p>
+  )}
+  <form method="post" class="admin-form admin-form--wide">
+    <input type="hidden" name="action" value="save" />
+    <input type="hidden" name="loaded" value={JSON.stringify({ core: Object.fromEntries(CORE_FIELDS.map((f) => [f, account[f]])), answers })} />
+    <fieldset>
+      <legend>About them</legend>
+      {CORE_FIELDS.map((f) => (
+        <div class="admin-row">
+          <label for={f}>{CORE_LABEL[f]}</label>
+          <input id={f} type="text" name={f} value={account[f]} maxlength="80" autocomplete="off" disabled={!canFill} />
+        </div>
+      ))}
+    </fieldset>
+
+    {SECTIONS.map((section) => (
+      <fieldset>
+        {/* The guest reads "Your golf"; the team reads "Golf". */}
+        <legend>{section.title.replace(/^Your (\w)/, (_, first: string) => first.toUpperCase())}</legend>
+        {QUESTIONS.filter((q) => q.section === section.id).map((q) => (
+          <div class="admin-row">
+            {q.kind === 'multi' ? (
+              <Fragment>
+                <span class="sheet-label" id={`l_${q.id}`}>{q.label}</span>
+                {/* Present even when no box is ticked, so "none" is told apart from "not on the form". */}
+                <input type="hidden" name={`q_${q.id}`} value="" />
+                <div class="sheet-checks" role="group" aria-labelledby={`l_${q.id}`}>
+                  {q.options?.map((o) => (
+                    <label class="admin-check">
+                      <input type="checkbox" name={`q_${q.id}`} value={o.value} checked={multiValues(answers[q.id] ?? '').includes(o.value)} disabled={!canFill} />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+              </Fragment>
+            ) : (
+              <Fragment>
+                <label for={`q_${q.id}`}>{q.label}</label>
+                {q.kind === 'choice' ? (
+                  <select id={`q_${q.id}`} name={`q_${q.id}`} disabled={!canFill}>
+                    <option value="">Not answered</option>
+                    {q.options?.map((o) => <option value={o.value} selected={answers[q.id] === o.value}>{o.label}</option>)}
+                  </select>
+                ) : (
+                  <input id={`q_${q.id}`} type="text" name={`q_${q.id}`} value={answers[q.id] ?? ''} maxlength={q.max ?? 120} autocomplete="off" disabled={!canFill} />
+                )}
+              </Fragment>
+            )}
+            {origin(q.id) && <p class="admin-hint">{origin(q.id)}</p>}
+          </div>
+        ))}
+      </fieldset>
+    ))}
+
+    <fieldset>
+      <legend>Team notes</legend>
+      <div class="admin-row">
+        <label for="internal_notes">Notes</label>
+        <textarea id="internal_notes" name="internal_notes" rows="6" maxlength="5000">{account.internal_notes}</textarea>
+        <p class="admin-hint">Only visible here. Never shown to the guest, and not part of the copy of their data they can download.</p>
+      </div>
+    </fieldset>
+    <div class="admin-actions admin-sticky"><button type="submit">Save the sheet</button></div>
+  </form>
+
+  <h2>Role</h2>
+  <form method="post" class="admin-form">
+    <input type="hidden" name="action" value="role" />
+    <fieldset>
+      <legend>Access</legend>
+      <div class="admin-row">
+        <label for="role">Role</label>
+        <select id="role" name="role" disabled={isSelf}>
+          {ROLES.map((r) => <option value={r} selected={r === account.role}>{ROLE_LABEL[r]}</option>)}
+        </select>
+        <p class="admin-hint">
+          {isSelf
+            ? 'This is your own account. Another admin can change your role.'
+            : 'An admin can open this admin and see every guest. Admins sign in with their email and a password only, never with Google or Apple, and are asked to sign in again after 12 hours. Changing the role signs the person out everywhere.'}
+        </p>
+      </div>
+    </fieldset>
+    {!isSelf && <div class="admin-actions"><button type="submit">Change role</button></div>}
+  </form>
+
+  {!isSelf && (
+    <form method="post" class="admin-danger" onsubmit="return confirm('Delete this customer and everything in their sheet? Their enquiries are kept in the inbox.')">
+      <input type="hidden" name="action" value="delete" />
+      <button type="submit">Delete this customer</button>
+    </form>
+  )}
+</AdminLayout>
+
+<style>
+  .sheet-enquiries { max-width: 860px; }
+  .sheet-open { margin: 24px 0 0; font-size: 14px; max-width: 720px; }
+  .sheet-open summary { cursor: pointer; }
+  .sheet-open ul { margin: 10px 0 0; padding-left: 20px; }
+  .sheet-open li { margin: 4px 0; }
+  .sheet-label { font-size: 14px; font-weight: 600; color: var(--text-heading); }
+  .sheet-checks { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+</style>

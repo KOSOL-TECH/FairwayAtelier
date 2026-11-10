@@ -1,0 +1,54 @@
+---
+import { env } from 'cloudflare:workers';
+import AuthLayout from '../../layouts/AuthLayout.astro';
+import { confirmEmail } from '../../lib/account/auth';
+import { peekToken } from '../../lib/account/store';
+
+/**
+ * Where the link in the welcome email leads. Opening it changes nothing (mail
+ * scanners open links too): the address is confirmed by the button, and only
+ * for the account that is signed in. The middleware sends a signed-out visitor
+ * to sign in first and brings them back here.
+ */
+export const prerender = false;
+
+const me = Astro.locals.account!;
+let token = (Astro.url.searchParams.get('token') ?? '').slice(0, 200);
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  token = String(form.get('token') ?? '').slice(0, 200);
+  if (await confirmEmail(env.DB, token, me.id)) return Astro.redirect('/account?notice=confirmed', 303);
+}
+
+if (me.email_verified) return Astro.redirect('/account', 303);
+
+// The link is for this profile and still usable; otherwise it expired, was used, or belongs to another profile.
+const mine = token !== '' && (await peekToken(env.DB, token, 'confirm_email')) === me.id;
+---
+<AuthLayout title="Confirm your email">
+  <div class="frame auth__card">
+    <div class="frame__inner auth__inner">
+      <p class="label label--11 auth__eyebrow">Your profile</p>
+      {mine ? (
+        <Fragment>
+          <h1 class="display-md auth__title">Confirm your email</h1>
+          <p class="auth__lead">Is <strong>{me.email}</strong> your address? Once confirmed, your profile also shows the enquiries you have sent us from it.</p>
+          <form method="post" class="auth__form">
+            <input type="hidden" name="token" value={token} />
+            <button type="submit" class="fa-btn fa-btn--primary fa-btn--lg auth__submit">Yes, confirm it</button>
+          </form>
+        </Fragment>
+      ) : (
+        <Fragment>
+          <h1 class="display-md auth__title">This link cannot be used</h1>
+          <p class="auth__lead" role="alert">
+            It has expired, was already used, or was sent to a different profile than the one signed in here ({me.email}).
+            You can send yourself a new one from your profile.
+          </p>
+          <p class="auth__links"><a class="fa-btn fa-btn--primary fa-btn--md" href="/account">Open your profile</a></p>
+        </Fragment>
+      )}
+    </div>
+  </div>
+</AuthLayout>

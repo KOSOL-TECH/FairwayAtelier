@@ -1,0 +1,51 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Eyebrow } from '../../components/ui/Eyebrow';
+import { ProfileEditor } from '../../components/islands/ProfileEditor';
+import { answersOf, enquiriesFor, getAccount, getAnswers, providersOf, publicProfile } from '../../lib/account/store';
+
+// A guest's own profile. The middleware has already checked the session; never cached.
+export const prerender = false;
+
+const account = await getAccount(env.DB, Astro.locals.account!.id);
+if (!account) return Astro.redirect('/sign-in', 303);
+
+const [answers, providers, enquiries] = await Promise.all([
+  getAnswers(env.DB, account.id),
+  providersOf(env.DB, account.id),
+  // Past enquiries are matched by email, so they show only once the address is confirmed as theirs.
+  account.email_verified ? enquiriesFor(env.DB, account.email) : Promise.resolve([]),
+]);
+
+const params = Astro.url.searchParams;
+const welcome = params.get('welcome') === '1';
+const notice = (['password', 'confirmed'] as const).find((n) => n === params.get('notice'));
+const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { dateStyle: 'long', timeZone: 'Europe/Paris' });
+const first = account.first_name;
+const greeting = first ? `${welcome ? 'Welcome' : 'Welcome back'}, ${first}` : 'Your profile';
+---
+<BaseLayout title="Your profile — Fairway Atelier" description="Your Fairway Atelier profile and preferences." index={false} prompt={false}>
+  <main id="main" class="sec" style="--max:860px; --pt:64px; --pb:96px">
+    <div class="center profile-head">
+      <Eyebrow rules tone="brass">Your profile</Eyebrow>
+      <h1 class="display-lg">{greeting}</h1>
+      <p>Tell us as much or as little as you like. Whatever you share, we will have to hand when we plan your week.</p>
+    </div>
+    <ProfileEditor
+      client:load
+      profile={publicProfile(account)}
+      answers={answersOf(answers)}
+      providers={providers}
+      enquiries={enquiries.map((e) => ({ received: day(e.received_at), dates: e.dates, party: e.party, tier: e.tier }))}
+      welcome={welcome}
+      notice={notice}
+    />
+  </main>
+</BaseLayout>
+
+<style>
+  .profile-head { margin-bottom: 36px; }
+  .profile-head h1 { margin: 16px 0 12px; }
+  .profile-head p { font-size: 16px; max-width: 520px; margin: 0 auto; }
+</style>

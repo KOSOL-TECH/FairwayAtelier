@@ -11,12 +11,12 @@ export default definePage({
     metaDescription: { group: 'Search engines', label: 'Description (Google)', kind: 'text', default: META['/cookies'][1] },
 
     heading: { group: 'Top of page', label: 'Title', default: 'Cookie policy' },
-    updated: { group: 'Top of page', label: 'Last updated (month and year)', default: 'July 2026' },
+    updated: { group: 'Top of page', label: 'Last updated (month and year)', default: 'November 2026' },
     placeholder: { group: 'Top of page', label: 'Review note', kind: 'text', default: 'Draft for review before launch. Cookie table to be completed once analytics vendor is finalised.' },
     intro: { group: 'Top of page', label: 'Introduction', kind: 'markdown', default: 'This site uses a minimal set of cookies. In line with CNIL guidance, non-essential cookies are set only with your consent, and refusing is as easy as accepting. You can change your choice at any time using the banner, which reappears when you clear your saved preference.' },
 
     section1Title: { group: 'Strictly necessary', label: 'Heading', default: 'Strictly necessary' },
-    section1Body: { group: 'Strictly necessary', label: 'Text', kind: 'markdown', default: 'Required for the site to function and to remember your cookie choice. These are always active and cannot be switched off. They store no marketing or profiling data.' },
+    section1Body: { group: 'Strictly necessary', label: 'Text', kind: 'markdown', default: 'Required for the site to function, to remember your cookie choice, and to keep you signed in to your profile if you have one. These are always active and cannot be switched off. They store no marketing or profiling data.' },
 
     section2Title: { group: 'Analytics', label: 'Heading', default: 'Analytics (optional, off by default)' },
     section2Body: { group: 'Analytics', label: 'Text', kind: 'markdown', default: 'With your consent, we use a privacy-respecting analytics tool (Plausible, Fathom, or Matomo) that measures aggregate, anonymous usage. It sets no advertising cookies and does not track you across other websites. We do not use Google Analytics.' },

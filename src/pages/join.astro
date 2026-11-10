@@ -1,0 +1,20 @@
+---
+import { env } from 'cloudflare:workers';
+import AuthLayout from '../layouts/AuthLayout.astro';
+import { JoinFlow } from '../components/islands/JoinFlow';
+import { enabledProviders } from '../lib/account/oauth';
+import { CONTACT_EMAIL } from '../lib/site';
+
+export const prerender = false;
+
+if (Astro.locals.account) return Astro.redirect('/account', 303);
+---
+<AuthLayout title="Create your profile">
+  <JoinFlow client:load providers={enabledProviders(env)} />
+  <noscript>
+    <p class="auth__lead auth__noscript">
+      Creating a profile needs JavaScript. You are just as welcome to <a href="/enquire">enquire</a> or to write to us at
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+    </p>
+  </noscript>
+</AuthLayout>

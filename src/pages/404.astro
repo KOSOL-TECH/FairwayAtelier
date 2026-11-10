@@ -11,7 +11,7 @@ export const prerender = false;
 
 const c = await loadPage(env.DB, page);
 ---
-<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription} index={false}>
+<BaseLayout title={c.t.metaTitle} description={c.t.metaDescription} index={false} prompt={false}>
   <main id="main" class="sec center" style="--max:720px; --pt:96px; --pb:96px">
     <Eyebrow rules tone="brass">{c.t.eyebrow}</Eyebrow>
     <h1 class="display-lg" style="margin:16px 0 18px">{c.t.title}</h1>

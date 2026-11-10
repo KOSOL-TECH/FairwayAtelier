@@ -1,23 +1,19 @@
 import type { APIContext, MiddlewareNext } from 'astro';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
-import { SESSION_COOKIE, readSession } from './lib/admin/session';
-import { currentSessionKey } from './lib/admin/login';
-
-const isAdminPath = (path: string) => /^\/(admin|api\/admin)(\/|$)/.test(path);
-const PUBLIC_ADMIN_PATHS = new Set(['/admin/login']);
+import { APPLE_CALLBACK, accessFor, areaOf, isCrossSiteWrite, isPublicPage } from './lib/account/guard';
+import { SESSION_COOKIE, isFreshForAdmin, readSession } from './lib/account/session';
+import { sessionAccount, type SessionAccount } from './lib/account/store';
 
 /**
  * Public pages are cached at the edge (the Worker cache, `cache` in
  * wrangler.jsonc) for an hour, then served stale for up to a day while they
- * refresh. Every admin change purges them by this tag, so edits still show at
- * once. Weeks drop off within the hour after their first day has passed.
+ * refresh. Every content change in the admin purges them by this tag, so edits
+ * still show at once. Weeks drop off within the hour after their first day has
+ * passed.
  */
 export const CONTENT_TAG = 'content';
 const PAGE_CACHE = { maxAge: 3600, swr: 86400, tags: [CONTENT_TAG] };
-
-/** Rendered pages anyone can see: not the admin, the APIs, media (cached by its own route) or Astro internals. */
-const isPublicPage = (path: string) => !/^\/(admin|api|media)(\/|$)/.test(path) && !path.startsWith('/_');
 
 /**
  * Security headers on every Worker response (static files get the same from
@@ -34,67 +30,97 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
 };
 
-function secure(res: Response): Response {
+/** For everything outside the public pages: kept out of every cache and out of search engines. */
+const PRIVATE_HEADERS: Record<string, string> = {
+  'Cache-Control': 'no-store',
+  'Cloudflare-CDN-Cache-Control': 'no-store',
+  'X-Robots-Tag': 'noindex',
+};
+
+function withHeaders(res: Response, headers: Record<string, string>): Response {
   try {
-    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.headers.set(k, v);
+    for (const [k, v] of Object.entries(headers)) res.headers.set(k, v);
     return res;
   } catch {
     // Some responses (e.g. from fetch) have immutable headers: copy them first.
     const copy = new Response(res.body, res);
-    for (const [k, v] of Object.entries(SECURITY_HEADERS)) copy.headers.set(k, v);
+    for (const [k, v] of Object.entries(headers)) copy.headers.set(k, v);
     return copy;
   }
 }
 
 /**
- * The signed-in admin, or null. Besides the signature and expiry, the session's
- * key must still match the user's password in D1: a password change or a removed
- * user ends every existing session.
+ * The signed-in account, or null. Besides the cookie's signature and expiry,
+ * its session key must still match the account in D1: a password change, a
+ * role change, "sign out everywhere" or a deleted account ends every session.
+ * If D1 cannot be read (or the accounts tables are missing), nobody is signed
+ * in; the public pages do not depend on this.
  */
-async function signedInEmail(token: string | undefined): Promise<string | null> {
-  const session = await readSession(token, env.SESSION_SECRET);
+async function signedIn(context: APIContext): Promise<{ account: SessionAccount; fresh: boolean } | null> {
+  const session = await readSession(context.cookies.get(SESSION_COOKIE)?.value, env.SESSION_SECRET);
   if (!session) return null;
   try {
-    return (await currentSessionKey(env.DB, session.email)) === session.key ? session.email : null;
+    const account = await sessionAccount(env.DB, session.aid, session.key);
+    return account ? { account, fresh: isFreshForAdmin(session) } : null;
   } catch (err) {
-    console.error('[admin] session check failed', err);
+    console.error('[account] session check failed', err);
     return null;
   }
 }
 
-export const onRequest = defineMiddleware(async (context, next) => secure(await handle(context, next)));
+export const onRequest = defineMiddleware(async (context, next) => withHeaders(await handle(context, next), SECURITY_HEADERS));
 
 async function handle(context: APIContext, next: MiddlewareNext): Promise<Response> {
   const path = context.url.pathname;
   const method = context.request.method;
 
-  if (!isAdminPath(path)) {
+  // A write must come from this site's own pages. Apple's sign-in callback is
+  // the one exception: Apple posts it from appleid.apple.com, and the handler
+  // checks the `state` value it issued instead.
+  if (!(method === 'POST' && path === APPLE_CALLBACK) && isCrossSiteWrite(context.request, context.url)) {
+    return new Response(`Cross-site ${method} requests are forbidden`, { status: 403, headers: PRIVATE_HEADERS });
+  }
+
+  const area = areaOf(path);
+
+  if (area === 'site') {
     const cacheable = !import.meta.env.DEV && (method === 'GET' || method === 'HEAD') && isPublicPage(path);
     if (cacheable) context.cache.set(PAGE_CACHE);
     const res = await next();
-    // Never keep an error page in the edge cache.
-    if (cacheable && res.status >= 500) res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    // Never keep an error page in the edge cache, nor a response that sets a
+    // cookie. The cache intent has to be withdrawn: Astro applies its cache
+    // headers after this middleware returns and would overwrite a header set here.
+    if (cacheable && (res.status >= 500 || res.headers.has('set-cookie') || !context.cookies.headers().next().done)) {
+      context.cache.set(false);
+      res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    }
     return res;
   }
 
-  // /admin and /api/admin: password session (src/lib/admin/session.ts). In
-  // `astro dev` a fixed local identity is used, so no password is needed.
-  const email = import.meta.env.DEV ? 'dev@localhost' : await signedInEmail(context.cookies.get(SESSION_COOKIE)?.value);
-
-  if (!email && !PUBLIC_ADMIN_PATHS.has(path)) {
-    if (path.startsWith('/api/')) {
-      return new Response('Unauthorized', { status: 401, headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
-    }
-    const login = new URL('/admin/login', context.url);
-    login.searchParams.set('next', path + context.url.search);
-    return context.redirect(login.pathname + login.search, 303);
+  // Sign-in pages, a guest's own account, and the admin: personal, never cached.
+  const who = await signedIn(context);
+  if (who) {
+    context.locals.account = who.account;
+    context.locals.signInFresh = who.fresh;
   }
 
-  if (email) context.locals.adminEmail = email;
+  if (area === 'admin' && import.meta.env.DEV) {
+    // In `astro dev` the admin opens without signing in, as a fixed local identity.
+    context.locals.adminEmail = who?.account.role === 'admin' ? who.account.email : 'dev@localhost';
+  } else {
+    const access = accessFor(area, path, context.url.search, who?.account ?? null, who?.fresh ?? false);
+    if (access.kind === 'deny') {
+      return new Response(access.status === 401 ? 'Unauthorized' : 'Forbidden', { status: access.status, headers: PRIVATE_HEADERS });
+    }
+    if (access.kind === 'redirect') return withHeaders(context.redirect(access.to, 303), PRIVATE_HEADERS);
+    if (area === 'admin' && who) context.locals.adminEmail = who.account.email;
+  }
+
   const res = await next();
 
-  // Any change saved in the admin may show on a public page: purge them all.
-  if (email && method === 'POST' && res.status < 500 && !import.meta.env.DEV) {
+  // A content change saved in the admin may show on a public page: purge them
+  // all. Customer sheets never do, so saving one leaves the cache alone.
+  if (area === 'admin' && method === 'POST' && res.status < 500 && !import.meta.env.DEV && !path.startsWith('/admin/customers')) {
     try {
       await context.cache.invalidate({ tags: CONTENT_TAG });
     } catch (err) {
@@ -102,7 +128,5 @@ async function handle(context: APIContext, next: MiddlewareNext): Promise<Respon
     }
   }
 
-  res.headers.set('Cache-Control', 'no-store');
-  res.headers.set('X-Robots-Tag', 'noindex');
-  return res;
+  return withHeaders(res, PRIVATE_HEADERS);
 }

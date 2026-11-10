@@ -5,5 +5,11 @@ Disallow: /privacy
 Disallow: /terms
 Disallow: /cookies
 Disallow: /admin
+Disallow: /account
+Disallow: /auth
+Disallow: /join
+Disallow: /sign-in
+Disallow: /forgot-password
+Disallow: /reset-password
 
 Sitemap: https://fairwayatelier.com/sitemap.xml
