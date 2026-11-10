@@ -1,3 +1,4 @@
+import type { APIContext, MiddlewareNext } from 'astro';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { SESSION_COOKIE, readSession } from './lib/admin/session';
@@ -17,7 +18,36 @@ const PAGE_CACHE = { maxAge: 3600, swr: 86400, tags: [CONTENT_TAG] };
 /** Rendered pages anyone can see: not the admin, the APIs, media (cached by its own route) or Astro internals. */
 const isPublicPage = (path: string) => !/^\/(admin|api|media)(\/|$)/.test(path) && !path.startsWith('/_');
 
-export const onRequest = defineMiddleware(async (context, next) => {
+/**
+ * Security headers on every Worker response (static files get the same from
+ * public/_headers). The CSP only restricts framing, <base>, form targets and
+ * plugins; a script-src policy can follow once the analytics provider (D-03)
+ * is known, since Astro islands and the JSON-LD use inline scripts.
+ */
+export const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Strict-Transport-Security': 'max-age=31536000',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+};
+
+function secure(res: Response): Response {
+  try {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.headers.set(k, v);
+    return res;
+  } catch {
+    // Some responses (e.g. from fetch) have immutable headers: copy them first.
+    const copy = new Response(res.body, res);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) copy.headers.set(k, v);
+    return copy;
+  }
+}
+
+export const onRequest = defineMiddleware(async (context, next) => secure(await handle(context, next)));
+
+async function handle(context: APIContext, next: MiddlewareNext): Promise<Response> {
   const path = context.url.pathname;
   const method = context.request.method;
 
@@ -60,4 +90,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
   res.headers.set('Cache-Control', 'no-store');
   res.headers.set('X-Robots-Tag', 'noindex');
   return res;
-});
+}

@@ -36,6 +36,23 @@ export interface Article extends ArticleRow {
  * text, never run. Bare email and web addresses stay plain text (no automatic
  * links); write [text](https://…) for a link.
  */
+const escapeText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * Links and images may only point at web pages, email, phone or this site:
+ * `javascript:`, `data:` and other schemes are dropped, even when written
+ * with character references (e.g. `java&#x73;cript:`) or mixed case.
+ */
+export function isSafeUrl(href: string): boolean {
+  const decoded = href
+    .replace(/&#x([0-9a-f]+);?/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);?/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&colon;/gi, ':')
+    .replace(/[\u0000- \u007f-\u009f]/g, '');
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(decoded)?.[1]?.toLowerCase();
+  return scheme === undefined || ['http', 'https', 'mailto', 'tel'].includes(scheme);
+}
+
 const md = new Marked({ gfm: true, breaks: false });
 md.use({
   tokenizer: {
@@ -43,6 +60,13 @@ md.use({
   },
   renderer: {
     html: ({ text }) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    // Returning false keeps marked's own rendering; an unsafe target keeps only the text.
+    link(token) {
+      return isSafeUrl(token.href) ? false : this.parser.parseInline(token.tokens);
+    },
+    image(token) {
+      return isSafeUrl(token.href) ? false : escapeText(token.text);
+    },
   },
 });
 

@@ -16,6 +16,22 @@ describe('renderMarkdown', () => {
     expect(html).not.toContain('<img');
     expect(html).toContain('&lt;script&gt;');
   });
+
+  it('keeps only the text of links and images with unsafe targets', () => {
+    for (const href of ['javascript:alert(1)', 'JAVASCRIPT:x', 'java&#x73;cript:x', 'java&#115;cript:x', '<javascript:x>', 'vbscript:x', 'data:text/html,hi']) {
+      const html = renderMarkdown(`[Read more](${href}) ![a <b> photo](${href})`);
+      expect(html, href).not.toContain('href=');
+      expect(html, href).not.toContain('<img');
+      expect(html, href).toContain('Read more');
+      expect(html, href).toContain('a &lt;b&gt; photo');
+    }
+  });
+
+  it('keeps web, email, phone and on-site links', () => {
+    const html = renderMarkdown('[a](https://x.fr) [b](mailto:atelier@fairwayatelier.com) [c](tel:+33299000000) [d](/journey) [e](#faq) ![f](/media/x?w=640)');
+    for (const href of ['https://x.fr', 'mailto:atelier@fairwayatelier.com', 'tel:+33299000000', '/journey', '#faq']) expect(html).toContain(`href="${href}"`);
+    expect(html).toContain('<img src="/media/x?w=640" alt="f">');
+  });
 });
 
 it('leaves bare email and web addresses as plain text', () => {
