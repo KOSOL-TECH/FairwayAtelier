@@ -14,7 +14,7 @@ import page from '../lib/pages/home';
 import crest from '../assets/crest.svg';
 import villaSketch from '../assets/villa-banner.svg?raw';
 
-// Rendered on each request so edits in /admin/pages show at once.
+// Rendered on demand and kept in the edge cache until an admin change purges it (src/middleware.ts).
 export const prerender = false;
 
 const c = await loadPage(env.DB, page);
@@ -26,7 +26,7 @@ const voices = ([1, 2, 3] as const).map((n) => ({
 }));
 const atmospheres = ([[1, 'coast'], [2, 'dining'], [3, 'restore']] as const).map(([n, slug]) => ({
   slug,
-  img: c.img(`card${n}Image` as const)!,
+  img: c.img(`card${n}Image` as const),
   title: c.t[`card${n}Title` as const],
   copy: c.t[`card${n}Copy` as const],
 }));
@@ -70,7 +70,7 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
       <div class="grid grid-3">
         {atmospheres.map((a) => (
           <a href={`/journal/${a.slug}`} class="atmos">
-            <MediaImage media={a.img} alt={a.title} class="media media--4x3 atmos__img" sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />
+            {a.img && <MediaImage media={a.img} alt="" class="media media--4x3 atmos__img" sizes="(max-width: 620px) 100vw, (max-width: 960px) 50vw, 380px" />}
             <h2>{a.title}</h2>
             <p>{a.copy}</p>
             <span class="read-more">{c.t.cardReadMore}</span>
@@ -83,9 +83,7 @@ const trust = ([1, 2, 3, 4] as const).map((n) => [c.t[`trust${n}Title` as const]
       <div class="inner">
         <Eyebrow rules tone="brass">{c.t.departuresEyebrow}</Eyebrow>
         <h2 class="display-md center departures__title">{c.t.departuresTitle}</h2>
-        <Departures server:defer>
-          <Departures skeleton slot="fallback" />
-        </Departures>
+        <Departures />
         <div class="center" style="margin-top:28px"><Button href="/availability">{c.t.departuresButton}</Button></div>
       </div>
     </section>

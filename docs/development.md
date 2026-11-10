@@ -18,7 +18,9 @@ npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangl
 
 | Path | What it holds |
 |---|---|
-| `src/pages/` | One file per route; `api/enquiry.ts` is the only server-rendered route |
+| `src/pages/` | One file per route, all rendered on demand in the Worker |
+| `src/middleware.ts` | Admin sign-in guard, edge-cache rules for public pages, purge after admin changes |
+| `src/lib/copy.ts`, `src/lib/pages/` | Editable page copy: approved originals in code, edits in D1 (`/admin/pages`) |
 | `src/layouts/BaseLayout.astro` | `<head>` (title, meta, canonical, OG/Twitter, JSON-LD), header, footer, consent |
 | `src/components/ui/` | Design-system components (same props as `prototype/components`) |
 | `src/components/islands/` | React islands: `CookieConsent`, `EnquiryForm`, `JourneyTiers`, `Testimonials` |
@@ -29,11 +31,11 @@ npm run cf-typegen  # regenerate worker-configuration.d.ts after changing wrangl
 | `src/lib/enquiry/` | Shared validation, the sink interface, rate limit |
 | `wrangler.jsonc` | Cloudflare Worker config: name, rate limiter, asset handling |
 
-Everything except `/api/enquiry` is prerendered to static HTML. Only the header menu (a small inline script), the cookie banner, the enquiry form, the Journey tier tabs and the Home testimonials ship client JS. The FAQ and availability accordions are native `<details>`.
+Every page renders on demand, so edits made in the admin (D1) show without a rebuild. Public pages are then kept in Cloudflare's Worker cache (`"cache": { "enabled": true }` in `wrangler.jsonc`, Astro route caching with `cacheCloudflare()` in `astro.config.mjs`). `src/middleware.ts` gives them one hour fresh plus a day of stale-while-revalidate, tagged `content`. Every POST in the admin purges that tag, so edits still show at once. Each deploy starts with an empty cache. If D1 cannot be read, `loadPage` falls back to the approved originals (without content photos), and the Home week list falls back to its empty state. Only the header menu (a small inline script), the cookie banner, the enquiry form, the Journey tier tabs and the Home testimonials ship client JS. The FAQ and availability accordions are native `<details>`.
 
 ## Editing content
 
-- **Availability:** in the admin at `/admin/weeks`; changes are live at once. `/availability` and `/enquire` render on each request, and the Home list is a server island (`src/components/Departures.astro`, `server:defer`), so Home itself stays prerendered. Only published weeks whose first day has not passed (Paris time) are shown. Weeks marked for Home appear there. Every shown week that is not `sold` becomes an option in the enquiry form, and the server validates against the same list.
+- **Availability:** in the admin at `/admin/weeks`; changes are live at once. `/availability`, `/enquire` and the Home list (`src/components/Departures.astro`) read the weeks from D1; an admin change purges the cached pages. Only published weeks whose first day has not passed (Paris time) are shown. Weeks marked for Home appear there. Every shown week that is not `sold` becomes an option in the enquiry form, and the server validates against the same list.
 - **Articles:** in the admin at `/admin/journal` (Markdown body; a `>` blockquote renders as the pull quote; raw HTML is shown as text). `/journal`, `/journal/<slug>` and `/sitemap.xml` render on each request, so published articles appear at once. Unknown or draft slugs get the site's 404 page (`src/lib/not-found.ts`).
 - **Images:** upload at `/admin/media`. Files live in the R2 bucket `fairway-atelier-media` (binding `MEDIA`) and are served from `/media/<id>?w=<width>`, resized and converted to AVIF/WebP by the Images binding (`IMAGES`) and cached at the edge. Only six widths are allowed (`WIDTHS` in `src/lib/media.ts`), which keeps resizing inside the 5,000 free transformations a month. Use `src/components/MediaImage.astro` to show one.
 
@@ -59,10 +61,10 @@ Nothing loads until the guest accepts analytics, and nothing loads at all while 
 
 ## Hosting (Cloudflare Workers)
 
-The site deploys as one Cloudflare Worker using `@astrojs/cloudflare`. The prerendered pages are served as static assets at no cost, and only `/api/enquiry` runs Worker code. The free Workers plan covers launch traffic. The paid plan (about $5 a month) is the step up if function requests ever pass the free daily allowance.
+The site deploys as one Cloudflare Worker using `@astrojs/cloudflare`. Pages render in the Worker and are served from the Worker cache between admin changes (see Structure). Hashed build assets (`/_astro/*`) are served as static assets at no cost. The account is on the Workers Paid plan (D-10).
 
 - **URLs:** `html_handling: "drop-trailing-slash"` in `wrangler.jsonc` keeps every URL matching its canonical (`/journal`, not `/journal/`); trailing-slash and `.html` variants redirect.
-- **Images** are optimised with Sharp at build time (`imageService: 'compile'`), so no Cloudflare Images subscription is needed.
+- **Images:** brand graphics in `src/assets` resize through the `IMAGES` binding at runtime; media-library photos go through `/media/<id>` (see Editing content).
 - **Sessions** are disabled (`session: false`), so no KV namespace is created.
 - **Domains:** the Worker serves `fairwayatelier.com` and `www.fairwayatelier.com` as custom domains (`routes` in `wrangler.jsonc`); the `workers.dev` address and preview URLs are off. A zone Redirect Rule sends `www` to the apex and Always Use HTTPS is on; both live in the Cloudflare dashboard.
 - **Continuous deploys:** Cloudflare Workers Builds deploys every push to `main`. Build command `npm test && npm run build`, deploy command `npx wrangler deploy`, Node version from `.node-version`. A failing test or `astro check` stops the deploy.

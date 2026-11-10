@@ -4,6 +4,10 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Worker cache in front of the Worker: public pages declare a cache lifetime
+  // and tag (src/middleware.ts) and are purged by tag when an admin saves a
+  // change. Each deploy starts with an empty cache (no cross-version reuse).
+  "cache": { "enabled": true },
   // Serve only on the custom domains below, not on *.workers.dev.
   "workers_dev": false,
   "preview_urls": false,

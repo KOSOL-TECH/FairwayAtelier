@@ -6,14 +6,32 @@ const isAdminPath = (path: string) => /^\/(admin|api\/admin)(\/|$)/.test(path);
 const PUBLIC_ADMIN_PATHS = new Set(['/admin/login']);
 
 /**
- * Guards /admin and /api/admin with the password session (src/lib/admin/session.ts).
- * Public pages are prerendered and never reach this at request time. In
- * `astro dev` a fixed local identity is used, so no password is needed.
+ * Public pages are cached at the edge (the Worker cache, `cache` in
+ * wrangler.jsonc) for an hour, then served stale for up to a day while they
+ * refresh. Every admin change purges them by this tag, so edits still show at
+ * once. Weeks drop off within the hour after their first day has passed.
  */
+export const CONTENT_TAG = 'content';
+const PAGE_CACHE = { maxAge: 3600, swr: 86400, tags: [CONTENT_TAG] };
+
+/** Rendered pages anyone can see: not the admin, the APIs, media (cached by its own route) or Astro internals. */
+const isPublicPage = (path: string) => !/^\/(admin|api|media)(\/|$)/.test(path) && !path.startsWith('/_');
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
-  if (!isAdminPath(path)) return next();
+  const method = context.request.method;
 
+  if (!isAdminPath(path)) {
+    const cacheable = !import.meta.env.DEV && (method === 'GET' || method === 'HEAD') && isPublicPage(path);
+    if (cacheable) context.cache.set(PAGE_CACHE);
+    const res = await next();
+    // Never keep an error page in the edge cache.
+    if (cacheable && res.status >= 500) res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    return res;
+  }
+
+  // /admin and /api/admin: password session (src/lib/admin/session.ts). In
+  // `astro dev` a fixed local identity is used, so no password is needed.
   const email = import.meta.env.DEV
     ? 'dev@localhost'
     : await readSession(context.cookies.get(SESSION_COOKIE)?.value, env.SESSION_SECRET);
@@ -29,6 +47,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (email) context.locals.adminEmail = email;
   const res = await next();
+
+  // Any change saved in the admin may show on a public page: purge them all.
+  if (email && method === 'POST' && res.status < 500 && !import.meta.env.DEV) {
+    try {
+      await context.cache.invalidate({ tags: CONTENT_TAG });
+    } catch (err) {
+      console.error('[cache] purge after admin change failed', err);
+    }
+  }
+
   res.headers.set('Cache-Control', 'no-store');
   res.headers.set('X-Robots-Tag', 'noindex');
   return res;

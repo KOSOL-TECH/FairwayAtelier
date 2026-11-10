@@ -14,13 +14,13 @@ export const prerender = false;
 const c = await loadPage(env.DB, page);
 const days = ([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => [c.t[`day${n}Label` as const], c.t[`day${n}Title` as const], c.t[`day${n}Copy` as const]]);
 
-const toImg = (m: { id: string; width: number; height: number }) =>
-  ({ src: mediaUrl(m.id, Math.min(snapWidth(1000), m.width)), srcset: srcset(m), width: m.width, height: m.height });
+const toImg = (m: { id: string; width: number; height: number } | null) =>
+  m && { src: mediaUrl(m.id, Math.min(snapWidth(1000), m.width)), srcset: srcset(m), width: m.width, height: m.height };
 const tiers: Tier[] = ([1, 2] as const).map((n) => ({
   tab: c.t[`tier${n}Tab` as const],
   eyebrow: c.t[`tier${n}Eyebrow` as const],
   hotel: c.t[`tier${n}Hotel` as const],
-  img: toImg(c.img(`tier${n}Image`)!),
+  img: toImg(c.img(`tier${n}Image`)),
   lead: c.t[`tier${n}Lead` as const],
   points: ([1, 2, 3, 4] as const).map((i) => c.t[`tier${n}Point${i}` as const]),
 }));

@@ -52,24 +52,34 @@ export interface PageCopy<K extends string> {
 
 /** Merges stored edits over the defaults. Pure, so it can be tested without D1. */
 export function mergeBlocks<K extends string>(def: PageDef<K>, rows: { block: string; value: string }[]): Record<K, string> {
-  const t = Object.fromEntries(Object.entries<BlockDef>(def.blocks).map(([k, b]) => [k, b.default])) as Record<K, string>;
+  const t = Object.fromEntries(Object.entries<BlockDef>(def.blocks).map(([k, b]) => [k, b.default.trim()])) as Record<K, string>;
   for (const r of rows) if (r.block in def.blocks) t[r.block as K] = r.value;
   return t;
 }
 
+/**
+ * Loads a page's copy. If D1 cannot be read, the page still renders with the
+ * approved originals (and without content photos, which are served from D1 too)
+ * rather than failing the whole site.
+ */
 export async function loadPage<K extends string>(db: D1Database, def: PageDef<K>): Promise<PageCopy<K>> {
-  const { results } = await db.prepare('SELECT block, value FROM page_blocks WHERE page = ?').bind(def.id).all<{ block: string; value: string }>();
-  const t = mergeBlocks(def, results);
-
-  const imageKeys = (Object.keys(def.blocks) as K[]).filter((k) => kindOf(def.blocks[k]) === 'image');
-  const ids = [...new Set(imageKeys.map((k) => t[k]).filter(Boolean))];
+  let t = mergeBlocks(def, []);
   const media = new Map<string, MediaFields>();
-  if (ids.length) {
-    const rows = await db
-      .prepare(`SELECT id, width, height, alt FROM media WHERE id IN (${ids.map(() => '?').join(', ')})`)
-      .bind(...ids)
-      .all<MediaFields>();
-    for (const m of rows.results) media.set(m.id, m);
+  try {
+    const { results } = await db.prepare('SELECT block, value FROM page_blocks WHERE page = ?').bind(def.id).all<{ block: string; value: string }>();
+    t = mergeBlocks(def, results);
+
+    const imageKeys = (Object.keys(def.blocks) as K[]).filter((k) => kindOf(def.blocks[k]) === 'image');
+    const ids = [...new Set(imageKeys.map((k) => t[k]).filter(Boolean))];
+    if (ids.length) {
+      const rows = await db
+        .prepare(`SELECT id, width, height, alt FROM media WHERE id IN (${ids.map(() => '?').join(', ')})`)
+        .bind(...ids)
+        .all<MediaFields>();
+      for (const m of rows.results) media.set(m.id, m);
+    }
+  } catch (err) {
+    console.error(`[copy] could not load page "${def.id}", showing the originals`, err);
   }
 
   return {

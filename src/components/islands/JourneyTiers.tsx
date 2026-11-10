@@ -9,7 +9,8 @@ export interface Tier {
   hotel: string;
   lead: string;
   points: string[];
-  img: { src: string; srcset?: string; width: number; height: number };
+  /** null when the photo cannot be loaded (deleted, or D1 unavailable) */
+  img: { src: string; srcset?: string; width: number; height: number } | null;
 }
 
 export interface JourneyTiersProps {
@@ -27,8 +28,8 @@ export function JourneyTiers({ tiers }: JourneyTiersProps) {
       {tiers.map((t, i) => (
         <div key={t.tab} role="tabpanel" id={`${base}-panel-${i}`} aria-labelledby={`${base}-tab-${i}`} hidden={i !== tier}
           className="tier-panel">
-          <img className="tier-panel__img" src={t.img.src} srcSet={t.img.srcset} sizes="(max-width: 960px) 100vw, 540px" width={t.img.width} height={t.img.height}
-            alt={t.hotel} loading="lazy" decoding="async" />
+          {t.img && <img className="tier-panel__img" src={t.img.src} srcSet={t.img.srcset} sizes="(max-width: 960px) 100vw, 540px" width={t.img.width} height={t.img.height}
+            alt={t.hotel} loading="lazy" decoding="async" />}
           <div className="tier-panel__body">
             <div className="label">{t.eyebrow}</div>
             <h3 className="tier-panel__hotel">{t.hotel}</h3>

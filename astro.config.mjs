@@ -2,9 +2,11 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import cloudflare from '@astrojs/cloudflare';
+import { cacheCloudflare } from '@astrojs/cloudflare/cache';
 
-// Every page is prerendered to static HTML and served from Cloudflare's asset
-// store. Only /api/enquiry runs in the Worker.
+// Pages render on demand in the Worker so admin edits (D1) show without a
+// rebuild. Public pages are kept in Cloudflare's Worker cache (`cache` in
+// wrangler.jsonc) and purged when an admin change is saved (src/middleware.ts).
 export default defineConfig({
   site: 'https://fairwayatelier.com',
   output: 'static',
@@ -15,5 +17,6 @@ export default defineConfig({
   adapter: cloudflare({ imageService: { build: 'compile', runtime: 'cloudflare-binding' } }),
   // No sessions are used, so no KV namespace is provisioned for them.
   session: false,
+  cache: { provider: cacheCloudflare() },
   integrations: [react()],
 });
