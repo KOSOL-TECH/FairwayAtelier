@@ -1,4 +1,15 @@
 import { DUMMY_HASH, verifyPassword } from './password';
+import { sessionKeyFor } from './session';
+
+/**
+ * The session key for a user's current password, or null if the user no
+ * longer exists. A session whose key differs was created before the password
+ * last changed, so it is no longer valid.
+ */
+export async function currentSessionKey(db: D1Database, email: string): Promise<string | null> {
+  const row = await db.prepare('SELECT password_hash FROM admin_users WHERE email = ?').bind(email).first<{ password_hash: string }>();
+  return row ? sessionKeyFor(row.password_hash) : null;
+}
 
 /**
  * Checks an email and password against `admin_users`.

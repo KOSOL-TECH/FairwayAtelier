@@ -1,7 +1,8 @@
 ---
 import { env } from 'cloudflare:workers';
 import '../../styles/global.css';
-import { authenticate, safeNext } from '../../lib/admin/login';
+import { authenticate, currentSessionKey, safeNext } from '../../lib/admin/login';
+import { logChange } from '../../lib/admin/audit';
 import { SESSION_COOKIE, createSession, sessionCookieOptions } from '../../lib/admin/session';
 
 export const prerender = false;
@@ -12,12 +13,14 @@ if (Astro.locals.adminEmail) return Astro.redirect(next, 303);
 let error = '';
 let email = '';
 if (Astro.request.method === 'POST') {
-  // Per-IP brake on guessing: 5 attempts per minute (LOGIN_LIMITER in wrangler.jsonc).
-  const ip = Astro.request.headers.get('CF-Connecting-IP') ?? 'unknown';
-  const { success } = env.LOGIN_LIMITER ? await env.LOGIN_LIMITER.limit({ key: `login:${ip}` }) : { success: true };
   const form = await Astro.request.formData();
   email = String(form.get('email') ?? '').slice(0, 254);
   const password = String(form.get('password') ?? '').slice(0, 1024);
+  // Brakes on guessing: 5 attempts per minute per IP, and 5 per minute per email
+  // so many IPs cannot share one account's budget (LOGIN_LIMITER in wrangler.jsonc).
+  const ip = Astro.request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const limit = async (key: string) => (env.LOGIN_LIMITER ? (await env.LOGIN_LIMITER.limit({ key })).success : true);
+  const success = (await limit(`login:${ip}`)) && (await limit(`login-email:${email.trim().toLowerCase()}`));
 
   if (!success) {
     error = 'Too many attempts. Please wait a minute and try again.';
@@ -27,8 +30,10 @@ if (Astro.request.method === 'POST') {
     Astro.response.status = 503;
   } else {
     const user = await authenticate(env.DB, email, password);
-    if (user) {
-      Astro.cookies.set(SESSION_COOKIE, await createSession(user, env.SESSION_SECRET), sessionCookieOptions);
+    const key = user && (await currentSessionKey(env.DB, user));
+    if (user && key) {
+      Astro.cookies.set(SESSION_COOKIE, await createSession(user, key, env.SESSION_SECRET), sessionCookieOptions);
+      await logChange(env.DB, user, 'sign_in', 'admin_user', user).catch((err) => console.error('[admin] sign-in audit failed', err));
       return Astro.redirect(next, 303);
     }
     error = 'That email and password do not match.';

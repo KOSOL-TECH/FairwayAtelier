@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DUMMY_HASH, hashPassword, verifyPassword } from './password';
-import { SESSION_HOURS, createSession, readSession } from './session';
+import { SESSION_HOURS, createSession, readSession, sessionKeyFor } from './session';
 import { safeNext } from './login';
 
 describe('password hashing', () => {
@@ -32,14 +32,29 @@ describe('sessions', () => {
   const secret = 'test-secret-0123456789';
   const now = Date.UTC(2026, 10, 3, 12);
 
-  it('round-trips the email until it expires', async () => {
-    const token = await createSession('atelier@fairwayatelier.com', secret, now);
-    expect(await readSession(token, secret, now + 1000)).toBe('atelier@fairwayatelier.com');
+  it('round-trips the email and key until it expires', async () => {
+    const token = await createSession('atelier@fairwayatelier.com', 'k1', secret, now);
+    expect(await readSession(token, secret, now + 1000)).toEqual({ email: 'atelier@fairwayatelier.com', key: 'k1' });
     expect(await readSession(token, secret, now + SESSION_HOURS * 3600_000 + 1)).toBeNull();
   });
 
+  it('rejects an old-style cookie without a key', async () => {
+    const payload = btoa(JSON.stringify({ email: 'atelier@fairwayatelier.com', exp: now + 1e9 })).replace(/=+$/, '');
+    const token = await createSession('x', 'k', secret, now);
+    expect(await readSession(`${payload}.${token.split('.')[1]}`, secret, now)).toBeNull();
+  });
+
+  it('derives a key that changes with the password hash and does not reveal it', async () => {
+    const a = await hashPassword('correct horse battery');
+    const b = await hashPassword('correct horse battery');
+    expect(await sessionKeyFor(a)).toBe(await sessionKeyFor(a));
+    expect(await sessionKeyFor(a)).not.toBe(await sessionKeyFor(b));
+    expect(await sessionKeyFor(a)).toMatch(/^[\w-]{16}$/);
+    expect(a).not.toContain(await sessionKeyFor(a));
+  });
+
   it('rejects a cookie signed with another secret, or with an altered payload', async () => {
-    const token = await createSession('atelier@fairwayatelier.com', secret, now);
+    const token = await createSession('atelier@fairwayatelier.com', 'k1', secret, now);
     expect(await readSession(token, 'another-secret', now)).toBeNull();
     const [, sig] = token.split('.');
     const forged = btoa(JSON.stringify({ email: 'intruder@example.com', exp: now + 1e9 })).replace(/=+$/, '');
@@ -47,7 +62,7 @@ describe('sessions', () => {
   });
 
   it('rejects everything without a secret or a cookie', async () => {
-    const token = await createSession('a@b.co', secret, now);
+    const token = await createSession('a@b.co', 'k1', secret, now);
     expect(await readSession(token, undefined, now)).toBeNull();
     expect(await readSession(undefined, secret, now)).toBeNull();
     expect(await readSession('garbage', secret, now)).toBeNull();
