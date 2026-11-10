@@ -330,4 +330,5 @@
 /* placement in the hero (hero needs position:relative) */
 .fa-sig--left{position:absolute;left:16px;top:72%;z-index:1}
 .fa-sig--right{position:absolute;right:16px;top:72%;z-index:1}
-@media (max-width:760px){.fa-sig--left,.fa-sig--right{display:none}}
+/* phones: both marks at 80% in the bottom corners of the hero, under the buttons (fits two side by side down to 320 px) */
+@media (max-width:760px){.fa-sig--left,.fa-sig--right{top:auto;bottom:18px;transform:scale(.8)}.fa-sig--left{left:12px;transform-origin:left bottom}.fa-sig--right{right:12px;transform-origin:right bottom}}
