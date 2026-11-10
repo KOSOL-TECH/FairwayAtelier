@@ -20,7 +20,7 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
       <span></span><span></span><span></span>
     </button>
   </div>
-  <nav id="mobile-menu" class="mobile-menu" aria-label="Main" hidden>
+  <nav id="mobile-menu" class="mobile-menu" aria-label="Menu" hidden>
     {NAV.map(([label, href]) => (
       <a href={href} class="mobile-menu__link" aria-current={isActive(href) ? 'page' : undefined}>{label}</a>
     ))}

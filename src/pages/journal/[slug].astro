@@ -16,6 +16,11 @@ const a = await getArticle(env.DB, Astro.params.slug ?? '');
 if (!a) return Astro.rewrite('/404');
 const html = renderMarkdown(a.body);
 const title = `${a.title} — Fairway Atelier`;
+// Share the article's own photo rather than the brand cover.
+const ogWidth = a.hero ? Math.min(1280, a.hero.width) : 0;
+const ogImage = a.hero
+  ? { url: new URL(mediaUrl(a.hero.id, 1280), SITE_URL).href, width: ogWidth, height: Math.round((a.hero.height * ogWidth) / a.hero.width), alt: a.hero.alt || a.title }
+  : undefined;
 
 const articleLd = {
   '@context': 'https://schema.org',
@@ -29,7 +34,7 @@ const articleLd = {
   publisher: { '@type': 'Organization', name: 'Fairway Atelier', logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.png` } },
 };
 ---
-<BaseLayout title={title} description={a.lede} ogType="article" jsonLd={[articleLd]}>
+<BaseLayout title={title} description={a.lede} ogType="article" jsonLd={[articleLd]} ogImage={ogImage}>
   <main id="main">
     <section class="sec center" style="--max:820px; --pt:64px; --pb:8px">
       <a href="/" class="label label--11 label--muted back">← Home</a>

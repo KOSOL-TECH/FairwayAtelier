@@ -27,6 +27,8 @@ if (Astro.request.method === 'POST') {
       // Read the real dimensions; this also rejects files that are not images.
       const info = await env.IMAGES.info(file.stream()).catch(() => null);
       if (!info || !('width' in info)) error = 'That file could not be read as an image.';
+      // The browser's file type is only a label: the decoded format must match it.
+      else if (info.format !== file.type) error = 'Upload a JPEG, PNG, WebP or AVIF image.';
       else {
         const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
         const key = `${id}.${ACCEPTED_TYPES[file.type]}`;

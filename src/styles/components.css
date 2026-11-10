@@ -148,7 +148,8 @@
 .fa-field__control {
   width: 100%; font-family: var(--font-sans); font-size: 14px; color: var(--text-heading);
   background: var(--surface-card); padding: 13px 14px; border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-none); outline: none;
+  /* Transparent rather than none: Windows High Contrast drops the box-shadow ring but draws the outline. */
+  border-radius: var(--radius-none); outline: 2px solid transparent; outline-offset: 1px;
   transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 .fa-field__control::placeholder { color: var(--text-muted); opacity: 1; }

@@ -16,12 +16,20 @@ interface Props {
   jsonLd?: object[];
   /** Set false for pages that must not be indexed (404) */
   index?: boolean;
+  /** Social image for this page (absolute URL and size); the brand cover by default */
+  ogImage?: { url: string; width: number; height: number; alt: string };
 }
 
 const { title, description, ogTitle = title, ogDescription = description, ogType = 'website', jsonLd = [], index = true } = Astro.props;
 const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '/') || '/';
 const url = canonical(path);
-const ogImage = new URL('/assets/og-cover.png', Astro.site).href;
+const og = Astro.props.ogImage ?? {
+  url: new URL('/assets/og-cover.png', Astro.site).href,
+  width: 1200,
+  height: 630,
+  alt: 'Fairway Atelier — bespoke luxury golf travel in Brittany',
+};
+const ogImage = og.url;
 const ld = [TRAVEL_AGENCY_LD, ...jsonLd];
 ---
 <!doctype html>
@@ -42,7 +50,9 @@ const ld = [TRAVEL_AGENCY_LD, ...jsonLd];
     <meta property="og:url" content={url} />
     <meta property="og:locale" content="en_GB" />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content="Fairway Atelier — bespoke luxury golf travel in Brittany" />
+    <meta property="og:image:width" content={String(og.width)} />
+    <meta property="og:image:height" content={String(og.height)} />
+    <meta property="og:image:alt" content={og.alt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={ogTitle} />
     <meta name="twitter:description" content={ogDescription} />

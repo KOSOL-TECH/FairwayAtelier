@@ -135,7 +135,8 @@ export function parseArticleForm(form: FormData): ArticleInput {
   const title = s('title', 200);
   return {
     slug: s('slug', 80) || slugify(title),
-    sort_order: Number(form.get('sort_order')) || 0,
+    // A whole number in a sane range ("1e999" or "abc" would otherwise reach D1 as Infinity or NaN).
+    sort_order: Math.max(-9999, Math.min(9999, Math.trunc(Number(form.get('sort_order'))) || 0)),
     eyebrow: s('eyebrow', 120),
     kicker: s('kicker', 60),
     title,

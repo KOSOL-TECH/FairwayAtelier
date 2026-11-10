@@ -31,6 +31,19 @@ export function CookieConsent({ policyHref = '/cookies' }: CookieConsentProps) {
     return () => window.removeEventListener(OPEN_CONSENT_EVENT, reopen);
   }, []);
 
+  // While the banner is open, keep focused fields and links from scrolling under it (WCAG 2.4.11).
+  const open = view !== 'idle' && view !== 'closed';
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!open || !el) return;
+    const root = document.documentElement;
+    const pad = () => { root.style.scrollPaddingBottom = `${el.offsetHeight}px`; };
+    pad();
+    const observer = new ResizeObserver(pad);
+    observer.observe(el);
+    return () => { observer.disconnect(); root.style.scrollPaddingBottom = ''; };
+  }, [open, view]);
+
   const save = (value: boolean) => { writeConsent(value); setView('closed'); };
 
   if (view === 'idle' || view === 'closed') return null;

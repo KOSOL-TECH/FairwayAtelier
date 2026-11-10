@@ -91,7 +91,12 @@ export async function mediaUsage(db: D1Database, id: string, pages: PageDef[]): 
   return [...results.map((r) => `Journal: ${r.title}`), ...pageUses];
 }
 
+/**
+ * Removes the library entry, then the file. If the file cannot be removed the
+ * entry is still gone (nothing links to it any more), so the failure is only
+ * logged with the R2 key, for tidying up by hand.
+ */
 export async function deleteMedia(db: D1Database, bucket: R2Bucket, m: Media) {
   await db.prepare('DELETE FROM media WHERE id = ?').bind(m.id).run();
-  await bucket.delete(m.r2_key);
+  await bucket.delete(m.r2_key).catch((err) => console.error('[media] R2 delete failed; orphaned key', m.r2_key, err));
 }
