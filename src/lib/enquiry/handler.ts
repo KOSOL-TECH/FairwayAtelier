@@ -44,7 +44,7 @@ export function getEnquirySinks(): EnquirySink[] {
  * @param id the form's submission id (see `submissionId`); a retry with the same
  *   id updates the stored enquiry and sends the emails again, without a duplicate.
  */
-export async function processEnquiry(fields: EnquiryFields, sinks = getEnquirySinks(), id = crypto.randomUUID()): Promise<Enquiry> {
+export async function processEnquiry(fields: EnquiryFields, sinks = getEnquirySinks(), id: string = crypto.randomUUID()): Promise<Enquiry> {
   const enquiry: Enquiry = { ...fields, id, receivedAt: new Date().toISOString() };
   for (const sink of sinks) await sink.handle(enquiry);
   return enquiry;

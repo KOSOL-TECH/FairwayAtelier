@@ -62,7 +62,7 @@ describe('page registry', () => {
   });
 
   it('only uses default images that the migrations seed into the media library', () => {
-    const sql = readdirSync('migrations').map((f) => readFileSync(`migrations/${f}`, 'utf8')).join('\n');
+    const sql = readdirSync('migrations').map((f: string) => readFileSync(`migrations/${f}`, 'utf8')).join('\n');
     for (const p of PAGES) {
       for (const [key, b] of Object.entries(p.blocks)) {
         if (kindOf(b) === 'image') expect(sql, `${p.id}.${key} → ${b.default}`).toContain(`'${b.default}'`);
