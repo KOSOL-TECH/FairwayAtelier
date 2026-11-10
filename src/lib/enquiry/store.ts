@@ -46,16 +46,25 @@ export async function purgeExpired(db: D1Database, now = new Date()): Promise<nu
   return res.meta.changes ?? 0;
 }
 
-/** Saves each accepted enquiry first, so it is kept even if an email then fails. */
+/**
+ * Saves each accepted enquiry first, so it is kept even if an email then fails.
+ * A retry of the same submission (same id) replaces the guest's details while
+ * the enquiry is still New, instead of adding a duplicate; once the team has
+ * acted on it, the stored enquiry is left as it is.
+ */
+export const UPSERT_ENQUIRY = `INSERT INTO enquiries (id, received_at, name, email, phone, dates, party, tier, message, last_contact_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT (id) DO UPDATE SET name = excluded.name, email = excluded.email, phone = excluded.phone, dates = excluded.dates,
+    party = excluded.party, tier = excluded.tier, message = excluded.message, last_contact_at = excluded.last_contact_at,
+    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  WHERE enquiries.status = 'new'`;
+
 export class D1Sink implements EnquirySink {
   readonly name = 'd1';
   constructor(private readonly db: D1Database) {}
   async handle(e: Enquiry) {
     await this.db
-      .prepare(
-        `INSERT INTO enquiries (id, received_at, name, email, phone, dates, party, tier, message, last_contact_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
+      .prepare(UPSERT_ENQUIRY)
       .bind(e.id, e.receivedAt, e.name, e.email, e.phone, e.dates, e.group, e.tier, e.notes, e.receivedAt)
       .run();
     await purgeExpired(this.db).catch((err) => console.error('[enquiry] purge failed', err));

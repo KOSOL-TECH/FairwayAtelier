@@ -48,8 +48,11 @@ Every page renders on demand, so edits made in the admin (D1) show without a reb
 `POST /api/enquiry` (JSON) validates with the same rules as the form and rejects a filled honeypot (`company`) silently. It also rate-limits to 5 requests per 60 seconds per IP through the Workers rate-limiting binding `ENQUIRY_LIMITER` (`wrangler.jsonc`). Accepted enquiries pass through every `EnquirySink` returned by `getEnquirySinks()` in `src/lib/enquiry/handler.ts`. They are, in order:
 
 1. `ConsoleSink` logs the enquiry with the email and phone redacted (visible in the Worker's logs in the Cloudflare dashboard).
-2. `TeamNotificationEmail` (`src/lib/enquiry/email.ts`) emails every field to atelier@fairwayatelier.com, with the guest as Reply-To, so replying answers the guest. If it fails, the request fails.
-3. `GuestConfirmationEmail` confirms receipt to the guest. A failure is logged but does not fail the request: the team already has the enquiry, and a retry would send them a duplicate.
+2. `D1Sink` (`src/lib/enquiry/store.ts`) stores it for the admin inbox before any email goes out.
+3. `TeamNotificationEmail` (`src/lib/enquiry/email.ts`) emails every field to atelier@fairwayatelier.com, with the guest as Reply-To, so replying answers the guest. If it fails, the request fails, so the guest can retry.
+4. `GuestConfirmationEmail` confirms receipt to the guest. A failure is logged but does not fail the request: the team already has the enquiry, and a retry would send them a duplicate.
+
+The form sends one random `id` (UUID) per enquiry. A retry after a failed send reuses it, so `D1Sink` updates the stored enquiry (while it is still New) instead of adding a second one. Requests over 16 KB are refused with 413.
 
 Both emails go out through the Cloudflare Email Service binding `EMAIL` (`wrangler.jsonc`), from atelier@fairwayatelier.com, so no API key is needed. The domain must be onboarded under **Email Service → Email Sending** in the dashboard (or with `npx wrangler email sending enable fairwayatelier.com`). Sending to guests, who are not verified addresses, needs the Workers Paid plan. Without the binding (`astro dev`) only `ConsoleSink` runs. Run `npm run cf-typegen` after changing bindings.
 

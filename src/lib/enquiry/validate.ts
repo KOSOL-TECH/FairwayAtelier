@@ -49,6 +49,16 @@ export function validateEnquiry(f: EnquiryFields, dateOptions: readonly string[]
 }
 
 /** Coerces an untrusted payload into trimmed, length-capped fields. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The form sends one random id per enquiry, so a retry after a failed send
+ * updates the same enquiry instead of storing a second one.
+ * @returns the id in lower case, or undefined if it is missing or not a UUID.
+ */
+export const submissionId = (raw: Record<string, unknown>): string | undefined =>
+  typeof raw.id === 'string' && UUID_RE.test(raw.id) ? raw.id.toLowerCase() : undefined;
+
 export function normaliseEnquiry(raw: Record<string, unknown>): EnquiryFields {
   const s = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   return {

@@ -16,6 +16,8 @@ export interface EnquiryFormProps {
 
 type Text = Exclude<keyof EnquiryFields, 'tier'>;
 const EMPTY = { name: '', email: '', phone: '', dates: '', group: '', notes: '' };
+/** Random UUID where the browser has one; without it the server assigns the id (no retry protection). */
+const newId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : undefined);
 
 export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryFormProps) {
   const [form, setForm] = useState<Record<Text, string>>(EMPTY);
@@ -27,6 +29,8 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
   const [sendError, setSendError] = useState(false);
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
   const [sent, setSent] = useState<{ first: string; email: string } | null>(null);
+  // One id per enquiry: a retry after a failed send updates it on the server instead of duplicating it.
+  const submission = useRef(newId());
   const formRef = useRef<HTMLFormElement>(null);
   const honeypot = useRef<HTMLInputElement>(null);
 
@@ -60,7 +64,7 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...fields, company: honeypot.current?.value ?? '' }),
+        body: JSON.stringify({ ...fields, id: submission.current, company: honeypot.current?.value ?? '' }),
       });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; errors?: FieldErrors };
       if (res.status === 422 && body.errors) {
@@ -80,6 +84,7 @@ export function EnquiryForm({ dateOptions, endpoint = '/api/enquiry' }: EnquiryF
 
   const close = () => {
     setSent(null);
+    submission.current = newId();
     setForm(EMPTY); setTier('Undecided'); setTouched({}); setSubmitted(false);
   };
 

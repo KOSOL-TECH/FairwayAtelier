@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLEXIBLE, GROUPS, MESSAGES, normaliseEnquiry, validateEnquiry, type EnquiryFields } from './validate';
+import { FLEXIBLE, GROUPS, MESSAGES, normaliseEnquiry, submissionId, validateEnquiry, type EnquiryFields } from './validate';
 
 const DATES = ['12–19 May', FLEXIBLE];
 
@@ -44,6 +44,18 @@ describe('validateEnquiry', () => {
   it('rejects a group or tier outside the allowed lists', () => {
     const errs = validateEnquiry({ ...valid, group: 'Twelve travellers', tier: 'Platinum' as EnquiryFields['tier'] }, DATES);
     expect(errs).toEqual({ group: MESSAGES.group, tier: 'Please choose a tier.' });
+  });
+});
+
+describe('submissionId', () => {
+  it('accepts a UUID and lower-cases it', () => {
+    expect(submissionId({ id: '0F8FAD5B-D9CB-469F-A165-70867728950E' })).toBe('0f8fad5b-d9cb-469f-a165-70867728950e');
+  });
+
+  it('ignores anything that is not a UUID', () => {
+    for (const id of [undefined, 42, '', 'abc', "'; DROP TABLE enquiries; --", '0f8fad5b-d9cb-469f-a165-70867728950e-x']) {
+      expect(submissionId({ id })).toBeUndefined();
+    }
   });
 });
 
