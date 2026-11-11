@@ -177,6 +177,15 @@ describe('accessFor', () => {
     expect(accessFor('admin', '/api/admin/x', '', admin, false)).toEqual({ kind: 'deny', status: 401 });
   });
 
+  it('offers a new profile, not a sign-in form, to a browser that has never held one', () => {
+    expect(accessFor('account', '/account', '', null, false, false)).toEqual({ kind: 'redirect', to: '/join' });
+    // A browser that has held a profile, and any deeper link, still goes to sign in.
+    expect(accessFor('account', '/account', '', null, false, true)).toEqual({ kind: 'redirect', to: '/sign-in?next=%2Faccount' });
+    expect(accessFor('account', '/account/data', '', null, false, false)).toEqual({ kind: 'redirect', to: '/sign-in?next=%2Faccount%2Fdata' });
+    expect(accessFor('admin', '/admin', '', null, false, false)).toEqual({ kind: 'redirect', to: '/sign-in?next=%2Fadmin' });
+    expect(accessFor('account', '/api/account/me', '', null, false, false)).toEqual({ kind: 'deny', status: 401 });
+  });
+
   it('lets a freshly signed-in admin in', () => {
     expect(accessFor('admin', '/admin', '', admin, true)).toEqual({ kind: 'allow' });
     expect(accessFor('admin', '/api/admin/x', '', admin, true)).toEqual({ kind: 'allow' });

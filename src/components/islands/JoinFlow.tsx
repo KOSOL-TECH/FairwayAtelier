@@ -13,6 +13,11 @@ import { CONTACT_EMAIL } from '../../lib/site';
 export interface JoinFlowProps {
   /** Quick sign-ins that are set up (docs/accounts.md); none shows the email form alone */
   providers: Provider[];
+  /**
+   * 'private': set into the Private Journeys page, where creating the profile is the enquiry. The team is
+   * told at once, and a guest who is already signed in sends the request with one tap.
+   */
+  variant?: 'page' | 'private';
 }
 
 /** What each frame is about, shown beside "Step n of 5". */
@@ -30,7 +35,11 @@ const EMPTY: Record<Field, string> = { name: '', email: '', password: '' };
  * the flow live in src/lib/account/join.ts. Nothing is stored until the account
  * is created; until then the answers stay in this tab.
  */
-export function JoinFlow({ providers }: JoinFlowProps) {
+export function JoinFlow({ providers, variant = 'page' }: JoinFlowProps) {
+  // Set into a page that has its own title, the questions sit a level below it.
+  const Ask = variant === 'private' ? 'h3' : 'h1';
+  // On the Private Journeys page a signed-in guest already has a profile: they are shown one button, not the questions.
+  const [member, setMember] = useState<{ name: string; state: 'idle' | 'sending' | 'sent' | 'failed' } | null>(null);
   const [state, dispatch] = useReducer(joinReducer, INITIAL);
   const [restored, setRestored] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -45,6 +54,30 @@ export function JoinFlow({ providers }: JoinFlowProps) {
   const honeypot = useRef<HTMLInputElement>(null);
   const moved = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // The page is cached and the same for everyone, so whether the visitor is signed in is found out after it loads.
+  useEffect(() => {
+    if (variant !== 'private' || !document.documentElement.classList.contains('signed-in')) return;
+    let cancelled = false;
+    fetch('/api/account/me')
+      .then((res) => (res.ok ? (res.json() as Promise<{ ok?: boolean; name?: string }>) : null))
+      .then((me) => {
+        if (!cancelled && me?.ok) setMember({ name: (me.name ?? '').split(' ')[0], state: 'idle' });
+      })
+      .catch(() => {}); // not signed in after all: the questions stay
+    return () => { cancelled = true; };
+  }, [variant]);
+
+  const requestPrivate = async () => {
+    if (!member || member.state === 'sending' || member.state === 'sent') return;
+    setMember({ ...member, state: 'sending' });
+    try {
+      const res = await fetch('/api/account/private', { method: 'POST' });
+      setMember({ ...member, state: res.ok ? 'sent' : 'failed' });
+    } catch {
+      setMember({ ...member, state: 'failed' });
+    }
+  };
 
   // Pick the flow back up after a reload or "Not now" in this tab.
   useEffect(() => {
@@ -146,7 +179,10 @@ export function JoinFlow({ providers }: JoinFlowProps) {
       const res = await fetch('/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, answers: state.answers, marketing, company: honeypot.current?.value ?? '' }),
+        body: JSON.stringify({
+          ...form, answers: state.answers, marketing, company: honeypot.current?.value ?? '',
+          ...(variant === 'private' && { interest: 'private' }),
+        }),
       });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; next?: string; claim?: boolean; errors?: Errors };
       if (res.ok && body.ok) {
@@ -187,7 +223,35 @@ export function JoinFlow({ providers }: JoinFlowProps) {
     setStatus('failed');
   };
 
+  if (member) {
+    return (
+      <div className="join-wrap">
+        <div className="frame auth__card join">
+          <div className="frame__inner auth__inner">
+            <p className="label label--11">Your profile</p>
+            <Ask className="display-md join__ask">{member.name ? `Shall we begin, ${member.name}?` : 'Shall we begin?'}</Ask>
+            <p className="join__intro">
+              We have your preferences to hand. Tell us you would like a private journey and our France-based team will reply within 24 hours.
+            </p>
+            <div className="join__member">
+              <Button size="lg" onClick={requestPrivate}>Request a private journey</Button>
+              <p role="status" className="join__intro">
+                {member.state === 'sending' && 'Sending…'}
+                {member.state === 'sent' && 'Thank you. Your request is with our team.'}
+              </p>
+              <p role="alert" className="enquiry__alert">
+                {member.state === 'failed' ? `We could not send it. Please try again, or write to ${CONTACT_EMAIL}.` : ''}
+              </p>
+            </div>
+            <p className="auth__links"><a href="/account">Review your profile</a></p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <div className="join-wrap">
     <div className="frame auth__card join">
       <div className="frame__inner auth__inner">
         <div className="join__progress">
@@ -199,7 +263,7 @@ export function JoinFlow({ providers }: JoinFlowProps) {
 
         {question ? (
           <div key={question.id} className="join__frame">
-            <h1 ref={heading} tabIndex={-1} id="join-ask" className="display-md join__ask">{question.ask}</h1>
+            <Ask ref={heading} tabIndex={-1} id="join-ask" className="display-md join__ask">{question.ask}</Ask>
             {state.step === 0 && (
               <p className="join__intro">Four quick questions, then your profile. It takes under a minute, and you can skip any of them.</p>
             )}
@@ -219,7 +283,7 @@ export function JoinFlow({ providers }: JoinFlowProps) {
           </div>
         ) : status === 'claim' ? (
           <div key="claim" className="join__frame">
-            <h1 ref={heading} tabIndex={-1} className="display-md join__ask">Check your inbox</h1>
+            <Ask ref={heading} tabIndex={-1} className="display-md join__ask">Check your inbox</Ask>
             <p className="join__intro" role="status">
               We already hold a few details for you from our conversations, so we have sent a link to {form.email.trim()} to finish setting up
               your profile. It works once, for one hour.
@@ -228,8 +292,14 @@ export function JoinFlow({ providers }: JoinFlowProps) {
           </div>
         ) : (
           <div key="account" className="join__frame">
-            <h1 ref={heading} tabIndex={-1} className="display-md join__ask">Keep this for next time</h1>
-            <p className="join__intro">Create your profile and we will have your preferences to hand whenever you enquire.</p>
+            <Ask ref={heading} tabIndex={-1} className="display-md join__ask">
+              {variant === 'private' ? 'Where shall we reach you?' : 'Keep this for next time'}
+            </Ask>
+            <p className="join__intro">
+              {variant === 'private'
+                ? 'Create your profile and our France-based team will reply within 24 hours to talk through your private journey.'
+                : 'Create your profile and we will have your preferences to hand whenever you enquire.'}
+            </p>
 
             {providers.length > 0 && (
               <>
@@ -274,10 +344,14 @@ export function JoinFlow({ providers }: JoinFlowProps) {
               <button type="button" className="join__text-btn" onClick={() => go({ type: 'back' })}>Back</button>
               <a className="join__text-btn" href="/">Not now</a>
             </div>
-            <p className="auth__links">Already have a profile? <a href="/sign-in">Sign in</a></p>
           </div>
         )}
       </div>
+    </div>
+      {/* Creating a profile is what is offered first; signing in is the second choice, in view on every frame. */}
+      {status !== 'claim' && (
+        <p className="auth__links join__signin">Already have a profile? <a href="/sign-in">Sign in here instead</a>.</p>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { APIContext, MiddlewareNext } from 'astro';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { APPLE_CALLBACK, accessFor, areaOf, isCrossSiteWrite, isPublicPage } from './lib/account/guard';
-import { SESSION_COOKIE, isFreshForAdmin, readSession } from './lib/account/session';
+import { KNOWN_COOKIE, SESSION_COOKIE, isFreshForAdmin, knownCookieOptions, readSession } from './lib/account/session';
 import { sessionAccount, type SessionAccount } from './lib/account/store';
 
 /**
@@ -99,16 +99,19 @@ async function handle(context: APIContext, next: MiddlewareNext): Promise<Respon
 
   // Sign-in pages, a guest's own account, and the admin: personal, never cached.
   const who = await signedIn(context);
+  const known = context.cookies.get(KNOWN_COOKIE)?.value === '1';
   if (who) {
     context.locals.account = who.account;
     context.locals.signInFresh = who.fresh;
+    // A browser that signed in before this cookie existed gets it now.
+    if (!known) context.cookies.set(KNOWN_COOKIE, '1', knownCookieOptions);
   }
 
   if (area === 'admin' && import.meta.env.DEV) {
     // In `astro dev` the admin opens without signing in, as a fixed local identity.
     context.locals.adminEmail = who?.account.role === 'admin' ? who.account.email : 'dev@localhost';
   } else {
-    const access = accessFor(area, path, context.url.search, who?.account ?? null, who?.fresh ?? false);
+    const access = accessFor(area, path, context.url.search, who?.account ?? null, who?.fresh ?? false, known);
     if (access.kind === 'deny') {
       return new Response(access.status === 401 ? 'Unauthorized' : 'Forbidden', { status: access.status, headers: PRIVATE_HEADERS });
     }

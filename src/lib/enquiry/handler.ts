@@ -41,6 +41,16 @@ export function getEnquirySinks(): EnquirySink[] {
 }
 
 /**
+ * For a request the team must hear about but that sends the guest nothing more: a private-journey request
+ * made from a profile (src/lib/account/private.ts). Stored for the inbox, then emailed to the team.
+ */
+export function getTeamSinks(): EnquirySink[] {
+  const sinks: EnquirySink[] = [new ConsoleSink(), new D1Sink(env.DB)];
+  if (env.EMAIL) sinks.push(new TeamNotificationEmail(env.EMAIL));
+  return sinks;
+}
+
+/**
  * @param id the form's submission id (see `submissionId`); a retry with the same
  *   id updates the stored enquiry and sends the emails again, without a duplicate.
  */

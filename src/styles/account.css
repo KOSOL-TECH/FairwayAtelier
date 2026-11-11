@@ -7,9 +7,11 @@
 /* ---- Header: "Sign in" for visitors, "Profile" once signed in. Public pages are
    cached and the same for everyone, so a class on <html> (set from a cookie by an
    inline script in BaseLayout) picks the label. ---- */
-.when-in { display: none; }
+.when-in, .when-known { display: none; }
+.known .when-new { display: none; }
+.known .when-known { display: inline; }
+.signed-in .when-known { display: none; }
 .signed-in .when-in { display: inline; }
-.signed-in .when-out { display: none; }
 
 /* ---- Focus ring on the account screens: the solid small-text brass (4.7:1 on cream and white). The
    site's translucent ring is too faint around chips, links and text buttons (WCAG 1.4.11). ---- */
@@ -206,3 +208,17 @@
 }
 .prompt-card__skip:hover { color: var(--text-heading); }
 @media (max-width: 620px) { .prompt-card { right: 14px; bottom: 14px; } }
+
+/* ---- The profile flow, on its own page or set into another (Private Journeys) ---- */
+.join-wrap { width: 100%; max-width: 520px; margin-inline: auto; text-align: left; --focus-ring: var(--accent-text); }
+.join__signin { margin-top: 16px; }
+.band--inverse .join__signin { color: var(--text-on-dark); }
+.band--inverse .join__signin a { color: var(--color-brass-light); }
+.join__member { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 22px; }
+.join__member p:empty { margin: 0; }
+
+/* ---- Your data (/account/data) ---- */
+.data-page { display: flex; flex-direction: column; gap: 22px; --focus-ring: var(--accent-text); }
+.data-page form { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin: 0; }
+.data-page label { display: flex; align-items: flex-start; gap: 10px; font-family: var(--font-sans); font-size: 14px; color: var(--text-body); }
+.data-page input[type='checkbox'] { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-fairway-green); }

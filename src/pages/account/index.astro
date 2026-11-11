@@ -20,7 +20,8 @@ const [answers, providers, enquiries] = await Promise.all([
 
 const params = Astro.url.searchParams;
 const welcome = params.get('welcome') === '1';
-const notice = (['password', 'confirmed'] as const).find((n) => n === params.get('notice'));
+// `private`: the profile was just created on the Private Journeys page, which also sent the team the request.
+const notice = params.get('private') === '1' ? 'private' : (['password', 'confirmed'] as const).find((n) => n === params.get('notice'));
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { dateStyle: 'long', timeZone: 'Europe/Paris' });
 const first = account.first_name;
 const greeting = first ? `${welcome ? 'Welcome' : 'Welcome back'}, ${first}` : 'Your profile';

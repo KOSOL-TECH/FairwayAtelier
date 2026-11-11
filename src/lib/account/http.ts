@@ -3,7 +3,9 @@
  * session cookies, and the rate-limit bindings.
  */
 import type { AstroCookies } from 'astro';
-import { HINT_COOKIE, SESSION_COOKIE, createSession, hintCookieOptions, sessionCookieOptions } from './session';
+import {
+  HINT_COOKIE, KNOWN_COOKIE, SESSION_COOKIE, createSession, hintCookieOptions, knownCookieOptions, sessionCookieOptions,
+} from './session';
 
 export const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -38,14 +40,20 @@ export async function readJsonObject(request: Request, max = MAX_BODY): Promise<
 export async function startSession(cookies: AstroCookies, account: { id: string; session_key: string }, secret: string, now = Date.now()) {
   cookies.set(SESSION_COOKIE, await createSession(account.id, account.session_key, secret, now), sessionCookieOptions);
   cookies.set(HINT_COOKIE, '1', hintCookieOptions);
+  cookies.set(KNOWN_COOKIE, '1', knownCookieOptions);
 }
 
 /** Clears both cookies. Same attributes as when they were set: browsers ignore a `__Host-` cookie without Secure. */
-export function endSession(cookies: AstroCookies) {
+export function endSession(cookies: AstroCookies, opts: { forget?: boolean } = {}) {
   const { maxAge: _session, ...session } = sessionCookieOptions;
   const { maxAge: _hint, ...hint } = hintCookieOptions;
   cookies.delete(SESSION_COOKIE, session);
   cookies.delete(HINT_COOKIE, hint);
+  // Signing out keeps the "has a profile" sign, so the site offers sign-in next time. Deleting the profile removes it.
+  if (opts.forget) {
+    const { maxAge: _known, ...known } = knownCookieOptions;
+    cookies.delete(KNOWN_COOKIE, known);
+  }
 }
 
 /**

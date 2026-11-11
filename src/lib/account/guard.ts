@@ -79,13 +79,25 @@ export type Access = { kind: 'allow' } | { kind: 'redirect'; to: string } | { ki
  * @param who the signed-in account, or null
  * @param fresh whether the sign-in is recent enough for the admin (`isFreshForAdmin`)
  */
-export function accessFor(area: Area, path: string, search: string, who: { role: 'customer' | 'admin' } | null, fresh: boolean): Access {
+export function accessFor(
+  area: Area,
+  path: string,
+  search: string,
+  who: { role: 'customer' | 'admin' } | null,
+  fresh: boolean,
+  /** Whether this browser has held a profile before (KNOWN_COOKIE in ./session.ts) */
+  known = true,
+): Access {
   if (area === 'site' || area === 'auth') return { kind: 'allow' };
   // APIs answer with a status; pages send the visitor to sign in and bring them back.
   const api = path.startsWith('/api/');
   const signIn = (extra = ''): Access => ({ kind: 'redirect', to: `/sign-in?next=${encodeURIComponent(path + search)}${extra}` });
 
-  if (!who) return api ? { kind: 'deny', status: 401 } : signIn();
+  if (!who) {
+    if (api) return { kind: 'deny', status: 401 };
+    // A browser that has never held a profile is offered one; signing in is the second choice there.
+    return !known && path === '/account' ? { kind: 'redirect', to: '/join' } : signIn();
+  }
   if (area === 'account') return { kind: 'allow' };
   if (who.role !== 'admin') return api ? { kind: 'deny', status: 403 } : { kind: 'redirect', to: '/account' };
   if (!fresh) return api ? { kind: 'deny', status: 401 } : signIn('&again=1');

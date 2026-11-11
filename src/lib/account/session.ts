@@ -11,6 +11,11 @@ import { randomToken, seal, unseal } from './signed';
 export const SESSION_COOKIE = '__Host-fa_session';
 /** Readable by scripts and holds nothing personal: it only lets cached pages show "Profile" instead of "Sign in". */
 export const HINT_COOKIE = 'fa_in';
+/**
+ * Readable too, holds only "1", and outlives signing out: it says this browser has held a profile, so the
+ * site offers it the sign-in page. A browser without it is offered a new profile instead.
+ */
+export const KNOWN_COOKIE = 'fa_known';
 export const SESSION_DAYS = 30;
 /** The admin needs a sign-in this recent, as its own sessions did before accounts existed. */
 export const ADMIN_FRESH_HOURS = 12;
@@ -54,3 +59,4 @@ const MAX_AGE = SESSION_DAYS * 86_400;
 /** Lax, not Strict: the cookie must survive the redirect back from Google or Apple. */
 export const sessionCookieOptions = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' as const, maxAge: MAX_AGE };
 export const hintCookieOptions = { path: '/', httpOnly: false, secure: true, sameSite: 'lax' as const, maxAge: MAX_AGE };
+export const knownCookieOptions = { path: '/', httpOnly: false, secure: true, sameSite: 'lax' as const, maxAge: 365 * 86_400 };

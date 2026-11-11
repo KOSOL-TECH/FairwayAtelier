@@ -1,0 +1,20 @@
+HTTP/1.1 200 OK
+Vary: Origin
+cache-control: no-store
+cloudflare-cdn-cache-control: no-store
+content-length: 49
+content-security-policy: frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+content-type: application/json
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=()
+referrer-policy: strict-origin-when-cross-origin
+set-cookie: __Host-fa_session=eyJhaWQiOiJjYTAxMzdiNS1kNGMwLTQxYWQtYWE2OS0wMWE0Mzk0YTJhMTQiLCJrZXkiOiJlUEVmVEZ2WnVlbFdRVmg4bmE3c013IiwiaWF0IjoxNzk0NDM0MjgwODE3LCJleHAiOjE3OTcwMjYyODA4MTd9.bSnYBLiIUI3dFn5opNzwkpxRtNOfCkBIrwHb0vLqIVA; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax
+set-cookie: fa_in=1; Max-Age=2592000; Path=/; Secure; SameSite=Lax
+set-cookie: fa_known=1; Max-Age=31536000; Path=/; Secure; SameSite=Lax
+strict-transport-security: max-age=31536000
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-robots-tag: noindex
+Date: Wed, 11 Nov 2026 21:58:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

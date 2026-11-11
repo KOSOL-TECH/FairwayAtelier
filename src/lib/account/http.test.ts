@@ -78,6 +78,20 @@ describe('session cookies', () => {
     expect(set.mock.calls[1]).toEqual([HINT_COOKIE, '1', expect.objectContaining({ httpOnly: false, secure: true, sameSite: 'lax', path: '/' })]);
   });
 
+  it('remembers that this browser has a profile: set with the session, kept on sign-out, dropped when the profile is deleted', async () => {
+    const signedIn = jar();
+    await startSession(signedIn.cookies, { id: 'acc-1', session_key: 'key-1' }, 'secret');
+    expect(signedIn.set.mock.calls[2]).toEqual(['fa_known', '1', expect.objectContaining({ httpOnly: false, secure: true, maxAge: 365 * 86_400 })]);
+
+    const signedOut = jar();
+    endSession(signedOut.cookies);
+    expect(signedOut.del.mock.calls.map(([name]) => name)).not.toContain('fa_known');
+
+    const deleted = jar();
+    endSession(deleted.cookies, { forget: true });
+    expect(deleted.del.mock.calls.map(([name]) => name)).toContain('fa_known');
+  });
+
   it('clears both on sign-out, with the attributes a __Host- cookie needs', () => {
     const { cookies, del } = jar();
     endSession(cookies);

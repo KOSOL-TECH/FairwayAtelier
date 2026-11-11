@@ -34,9 +34,15 @@ Five frames. Frames 1 to 4 are one tap each and move on by themselves; each has 
 
 The answers travel with the account request: in the sign-up body for email, or inside the signed sign-in cookie for Google and Apple. "Not now" keeps them in the tab (`sessionStorage`) only. The flow's rules are a small state machine in `src/lib/account/join.ts`.
 
+**Profile creation comes first** (client request 2026-11-11). The header link reads "Create profile" and leads to `/join` for a browser that has never held a profile, "Sign in" for one that has, and "Profile" when signed in. What tells them apart is a cookie, `fa_known`, that holds only "1", is set at sign-in and is kept after signing out (removed when the profile is deleted). `/join` shows "Already have a profile? Sign in here instead." under every frame.
+
+**On Private Journeys (`/private`)** the same flow is set into the page in place of the button to the enquiry form. Creating the profile there files a private-journey request in the enquiries inbox ("Private journey: dates to be agreed", with the guest's answers) and emails the team; a guest who is already signed in sees one button that does the same (`src/lib/account/private.ts`). The guest gets no enquiry confirmation email for these: their profile says the request is with the team.
+
+Google and Apple sign-in are parked (client decision 2026-11-11); the code stays, and the buttons stay hidden until the secrets below are set.
+
 ## Profile (`/account`)
 
-Sections: About you, Your golf, Your journey, At the table, Your stay, Staying in touch, Your enquiries, Signing in, Your data. Choices save on tap, text saves when the field loses focus. Questions that do not apply are left out (no handicap for a non-golfer). The page also offers a download of the guest's data (JSON) and deleting the profile.
+Sections: About you, Your golf, Your journey, At the table, Your stay, Staying in touch, Your enquiries, Signing in. Choices save on tap, text saves when the field loses focus. Questions that do not apply are left out (no handicap for a non-golfer). Taking a copy of the data (JSON) and deleting the profile are on a separate page, `/account/data`, linked as "Your data" in the footer and from the privacy policy (client request 2026-11-11).
 
 ## Later questions
 

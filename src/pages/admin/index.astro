@@ -21,11 +21,10 @@ const SECTIONS: { title: string; text: string; href?: string; phase?: string }[]
 <AdminLayout title="Overview">
   <div class="admin-cards">
     {SECTIONS.map((s) => (
-      <div class="admin-card">
-        <h3>{s.href ? <a href={s.href}>{s.title}</a> : s.title}</h3>
+      <a class="admin-card" href={s.href}>
+        <h3>{s.title}</h3>
         <p>{s.text}</p>
-        {s.phase && <p><em>{s.phase}</em></p>}
-      </div>
+      </a>
     ))}
   </div>
 
@@ -43,3 +42,15 @@ const SECTIONS: { title: string; text: string; href?: string; phase?: string }[]
     </table>
   )}
 </AdminLayout>
+
+<style>
+  /* The whole card is the link, not only its title. */
+  a.admin-card {
+    display: block; text-decoration: none;
+    transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+  }
+  a.admin-card:hover, a.admin-card:focus-visible { border-color: var(--accent); box-shadow: var(--shadow-card); }
+  a.admin-card:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+  a.admin-card h3 { color: var(--text-accent); }
+  a.admin-card:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
+</style>

@@ -66,7 +66,7 @@ const ld = [TRAVEL_AGENCY_LD, ...jsonLd];
     {ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj)} />)}
     {/* Pages are cached and the same for everyone. `signed-in` comes from a cookie that holds nothing but "1"
         (set beside the real session cookie) and only switches the header link to "Profile". */}
-    <script is:inline>document.documentElement.classList.add('js');if(document.cookie.split('; ').indexOf('fa_in=1')>-1)document.documentElement.classList.add('signed-in');</script>
+    <script is:inline>(function(h,c){h.add('js');if(c.indexOf('fa_in=1')>-1)h.add('signed-in','known');else if(c.indexOf('fa_known=1')>-1)h.add('known');})(document.documentElement.classList,document.cookie.split('; '));</script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

@@ -32,7 +32,7 @@ export default definePage({
       group: 'Your rights',
       label: 'Text',
       kind: 'markdown',
-      default: 'You have the right to access, rectify, erase, restrict, and port your data, and to object to processing. If you have a profile, you can correct it, download a copy of it and delete it yourself from your profile page. To exercise these rights, or to lodge a complaint, contact atelier@fairwayatelier.com. You may also complain to the CNIL (www.cnil.fr).',
+      default: 'You have the right to access, rectify, erase, restrict, and port your data, and to object to processing. If you have a profile, you can correct it on your profile page, and take a copy of it or delete it on the [Your data](/account/data) page. To exercise these rights, or to lodge a complaint, contact atelier@fairwayatelier.com. You may also complain to the CNIL (www.cnil.fr).',
     },
 
     section6Title: { group: 'Analytics', label: 'Heading', default: 'Analytics' },

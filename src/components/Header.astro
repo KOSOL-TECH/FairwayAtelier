@@ -17,7 +17,7 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
       ))}
       {/* /account sends a signed-out visitor on to sign in. The label follows the `signed-in` class (BaseLayout). */}
       <a href="/account" class="site-nav__link site-nav__account" aria-current={isActive('/account') ? 'page' : undefined}>
-        <span class="when-out">Sign in</span><span class="when-in">Profile</span>
+        <span class="when-new">Create profile</span><span class="when-known">Sign in</span><span class="when-in">Profile</span>
       </a>
     </nav>
     <button type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu">
@@ -29,7 +29,7 @@ const isActive = (href: string) => href === '/' ? current === '/' : current === 
       <a href={href} class="mobile-menu__link" aria-current={isActive(href) ? 'page' : undefined}>{label}</a>
     ))}
     <a href="/account" class="mobile-menu__link" aria-current={isActive('/account') ? 'page' : undefined}>
-      <span class="when-out">Sign in</span><span class="when-in">Profile</span>
+      <span class="when-new">Create profile</span><span class="when-known">Sign in</span><span class="when-in">Profile</span>
     </a>
   </nav>
 </header>

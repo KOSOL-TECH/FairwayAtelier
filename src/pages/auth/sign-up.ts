@@ -4,7 +4,10 @@ import { signUp } from '../../lib/account/auth';
 import { claimEmail, confirmUrl, resetUrl, sendAccountEmail, welcomeEmail } from '../../lib/account/email';
 import { siteOrigin } from '../../lib/account/guard';
 import { background, clientIp, isLocal, json, limited, readJsonObject, startSession } from '../../lib/account/http';
+import { privateJourneyEnquiry } from '../../lib/account/private';
+import { normaliseAnswers } from '../../lib/account/questions';
 import { issueToken } from '../../lib/account/store';
+import { getTeamSinks, processEnquiry } from '../../lib/enquiry/handler';
 
 export const prerender = false;
 
@@ -51,5 +54,16 @@ export const POST: APIRoute = async ({ request, cookies, url, locals }) => {
   } catch (err) {
     console.error('[account] welcome email was not sent', err instanceof Error ? err.message : err);
   }
-  return json(200, { ok: true, next: WELCOME });
+  // On the Private Journeys page, creating the profile is the enquiry: tell the team at once.
+  // The profile only says "your request is with our team" if it really is.
+  let requested = false;
+  if (body.interest === 'private') {
+    try {
+      await processEnquiry(privateJourneyEnquiry(result.account, normaliseAnswers(body.answers)), getTeamSinks());
+      requested = true;
+    } catch (err) {
+      console.error('[account] private journey request failed', err);
+    }
+  }
+  return json(200, { ok: true, next: requested ? `${WELCOME}&private=1` : WELCOME });
 };

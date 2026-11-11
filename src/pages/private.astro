@@ -2,7 +2,8 @@
 import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
-import { Button } from '../components/ui/Button';
+import { JoinFlow } from '../components/islands/JoinFlow';
+import { enabledProviders } from '../lib/account/oauth';
 import { loadPage } from '../lib/copy';
 import page from '../lib/pages/private';
 
@@ -30,7 +31,11 @@ const options = ([1, 2, 3, 4] as const).map((n) => [c.t[`option${n}Title` as con
         <div class="label label--11 label--light">{c.t.ctaLabel}</div>
         <h2 class="display-md on-dark cta__title">{c.t.ctaTitle}</h2>
         <p class="on-dark-soft cta__copy">{c.t.ctaCopy}</p>
-        <Button href="/enquire">{c.t.ctaButton}</Button>
+        {/* Here, creating a profile is how a private journey is requested: the same few questions as /join, then the
+            account, set into the page. The team is told at once (src/lib/account/private.ts). Without JavaScript,
+            the enquiry form is offered instead. */}
+        <JoinFlow client:visible variant="private" providers={enabledProviders(env)} />
+        <noscript><p class="cta__alt"><a href="/enquire">{c.t.ctaButton}</a></p></noscript>
       </div>
     </section>
   </main>
@@ -43,5 +48,7 @@ const options = ([1, 2, 3, 4] as const).map((n) => [c.t[`option${n}Title` as con
   .option p { font-size: 14px; margin: 0; }
   .cta__title { margin: 16px 0 18px; }
   .cta__copy { margin: 0 0 32px; }
+  .cta__alt { margin: 20px 0 0; }
+  .cta__alt a { color: var(--color-brass-light); text-decoration: underline; text-underline-offset: 3px; }
   @media (max-width: 620px) { .option { padding: 24px 22px; } }
 </style>

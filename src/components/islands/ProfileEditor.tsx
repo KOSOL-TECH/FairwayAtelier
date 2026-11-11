@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState, type ReactNode, type SubmitEvent } 
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { Chips } from '../ui/Chips';
-import { Dialog } from '../ui/Dialog';
 import { Input } from '../ui/Input';
 import { JOIN_STORAGE_KEY } from '../../lib/account/join';
 import { CORE_FIELDS, CORE_LABEL, MIN_PASSWORD, completeness, type Core, type CoreField } from '../../lib/account/profile';
@@ -20,7 +19,7 @@ export interface ProfileEditorProps {
   enquiries: { received: string; dates: string; party: string; tier: string }[];
   /** First visit, straight from onboarding */
   welcome?: boolean;
-  notice?: 'password' | 'confirmed';
+  notice?: 'password' | 'confirmed' | 'private';
 }
 
 type SaveState = 'saving' | 'saved' | 'error';
@@ -87,7 +86,6 @@ export function ProfileEditor({ profile, answers: initialAnswers, providers, enq
   const [passwordState, setPasswordState] = useState<'idle' | 'sending' | 'done' | 'failed'>('idle');
   const [linkState, setLinkState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [elsewhere, setElsewhere] = useState<'idle' | 'sending' | 'done' | 'failed'>('idle');
-  const [deleting, setDeleting] = useState<'closed' | 'open' | 'sending' | 'failed'>('closed');
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const passwordForm = useRef<HTMLFormElement>(null);
   /** Saves are sent one after another through this chain. */
@@ -225,18 +223,6 @@ export function ProfileEditor({ profile, answers: initialAnswers, providers, enq
     }
   };
 
-  const deleteProfile = async () => {
-    setDeleting('sending');
-    try {
-      const res = await post('/api/account/delete', { confirm: 'DELETE' });
-      if (!res.ok) throw new Error(String(res.status));
-      window.location.assign('/sign-in?notice=deleted');
-    } catch {
-      // Show the failure only if the dialog is still open: a guest who closed it meanwhile is not shown it again.
-      setDeleting((now) => (now === 'sending' ? 'failed' : now));
-    }
-  };
-
   const methods = [...(hasPassword ? ['your email and a password'] : []), ...providers.map((p) => PROVIDER_NAME[p])];
 
   return (
@@ -248,6 +234,12 @@ export function ProfileEditor({ profile, answers: initialAnswers, providers, enq
       )}
       {notice === 'confirmed' && <p className="profile__notice" role="status">Thank you. Your email address is confirmed.</p>}
       {notice === 'password' && <p className="profile__notice" role="status">Your new password is set, and you are signed in.</p>}
+      {notice === 'private' && (
+        <p className="profile__notice" role="status">
+          Thank you. Your private journey request is with our France-based team, who will reply within 24 hours. Anything you add below
+          helps us prepare.
+        </p>
+      )}
 
       <div className="profile__progress">
         <p className="label label--11">{`Your profile · ${progress.done} of ${progress.total} details`}</p>
@@ -371,30 +363,7 @@ export function ProfileEditor({ profile, answers: initialAnswers, providers, enq
         {profile.isAdmin && <p className="profile__actions"><a className="profile__link" href="/admin">Open the admin</a></p>}
       </Section>
 
-      <Section title="Your data">
-        <p className="profile__text">
-          You can take a copy of everything in your profile, or remove it altogether. Our <a href="/privacy">privacy policy</a> explains how
-          we look after it.
-        </p>
-        <div className="profile__actions">
-          <a className="profile__link" href="/account/export">Download my data</a>
-          {!profile.isAdmin && (
-            <button type="button" className="profile__link profile__link--danger" onClick={() => setDeleting('open')}>Delete my profile</button>
-          )}
-        </div>
-      </Section>
-
-      <Dialog open={deleting !== 'closed'} onClose={() => setDeleting('closed')} eyebrow="Your data" title="Delete your profile?"
-        actions={
-          <>
-            <Button onClick={() => setDeleting('closed')} disabled={deleting === 'sending'}>Keep my profile</Button>
-            <Button variant="secondary" onClick={deleteProfile} busy={deleting === 'sending'}>Delete it</Button>
-          </>
-        }>
-        Your profile and everything in it will be removed straight away, and this cannot be undone. Enquiries you have already sent us are
-        kept as our privacy policy describes; write to {CONTACT_EMAIL} if you would like those erased too.
-        <span role="alert" className="profile__dialog-error">{deleting === 'failed' ? 'We could not delete it just now. Please try again.' : ''}</span>
-      </Dialog>
+      {/* Taking a copy of the data, or deleting the profile, is on /account/data: linked from the footer and the privacy policy. */}
     </div>
   );
 }

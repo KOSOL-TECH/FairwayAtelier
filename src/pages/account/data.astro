@@ -1,0 +1,80 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Eyebrow } from '../../components/ui/Eyebrow';
+import { endSession } from '../../lib/account/http';
+import { deleteAccount } from '../../lib/account/store';
+import { CONTACT_EMAIL } from '../../lib/site';
+
+/**
+ * A guest's own data: take a copy, or delete the profile. Kept out of the
+ * profile itself (client request 2026-11-11) and reached from the footer and
+ * the privacy policy. The middleware signs the visitor in first. Works without
+ * JavaScript.
+ */
+export const prerender = false;
+
+const me = Astro.locals.account!;
+// An admin cannot delete their own account, so there is always one left to manage the others.
+const isAdmin = me.role === 'admin';
+let error = '';
+
+if (Astro.request.method === 'POST' && !isAdmin) {
+  const form = await Astro.request.formData();
+  if (form.get('confirm') === 'yes') {
+    await deleteAccount(env.DB, me.id);
+    endSession(Astro.cookies, { forget: true });
+    return Astro.redirect('/sign-in?notice=deleted', 303);
+  }
+  error = 'Please tick the box to confirm.';
+  Astro.response.status = 422;
+}
+---
+<BaseLayout title="Your data — Fairway Atelier" description="Take a copy of your Fairway Atelier profile, or delete it." index={false} prompt={false}>
+  <main id="main" class="sec" style="--max:720px; --pt:64px; --pb:96px">
+    <div class="center data-head">
+      <Eyebrow rules tone="brass">Your profile</Eyebrow>
+      <h1 class="display-lg">Your data</h1>
+      <p>{`This concerns the profile for ${me.email}.`} Our <a href="/privacy">privacy policy</a> explains how we look after it.</p>
+    </div>
+    <div class="data-page">
+      <section class="profile__section" aria-labelledby="data-copy">
+        <h2 id="data-copy" class="display-sm">Take a copy</h2>
+        <p class="profile__text">One file with your profile, your answers and the enquiries you have sent us from this address.</p>
+        <a class="fa-btn fa-btn--secondary fa-btn--sm" href="/account/export">Download my data</a>
+      </section>
+      <section class="profile__section" aria-labelledby="data-delete">
+        <h2 id="data-delete" class="display-sm">Delete your profile</h2>
+        {isAdmin ? (
+          <p class="profile__text">An admin profile cannot be deleted here. Another admin removes the role first.</p>
+        ) : (
+          <Fragment>
+            <p class="profile__text">
+              Your profile and everything in it is removed straight away, and this cannot be undone. Enquiries you have already sent us are
+              kept as our privacy policy describes; write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> if you would like those
+              erased too.
+            </p>
+            {error && <p id="data-error" class="auth__error" role="alert">{error}</p>}
+            <form method="post">
+              <label>
+                <input type="checkbox" name="confirm" value="yes" required aria-describedby={error ? 'data-error' : undefined} />
+                I understand, and I want my profile deleted.
+              </label>
+              <button type="submit" class="fa-btn fa-btn--secondary fa-btn--sm">Delete my profile</button>
+            </form>
+          </Fragment>
+        )}
+      </section>
+      <p><a class="profile__link" href="/account">Back to your profile</a></p>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .data-head { margin-bottom: 36px; }
+  .data-head h1 { margin: 16px 0 12px; }
+  .data-head p { font-size: 15px; max-width: 520px; margin: 0 auto; }
+  .data-head a { text-decoration: underline; text-underline-offset: 3px; }
+  .data-page h2 { margin-bottom: 12px; }
+  .data-page p:last-child { margin: 0; }
+</style>

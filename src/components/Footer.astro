@@ -44,6 +44,8 @@ const legal = ([1, 2, 3, 4] as const).map((n, i) => [c.t[`legal${n}Label` as con
       <span>{c.t.legalLine}</span>
       <span class="site-footer__legal-links">
         {legal.map(([label, href]) => <a href={href}>{label}</a>)}
+        {/* Where a guest with a profile takes a copy of their data or deletes it (it signs them in first). */}
+        <a href="/account/data">Your data</a>
         <button type="button" class="site-footer__cookie-btn" data-open-consent>{c.t.cookieSettings}</button>
       </span>
     </div>
